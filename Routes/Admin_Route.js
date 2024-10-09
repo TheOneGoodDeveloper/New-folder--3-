@@ -5,7 +5,7 @@ import * as Admin from "../Controller/Admin_Controller.js";
 import * as User from "../Controller/User_Controller.js";
 import * as Category from "../Controller/Category_Controller.js";
 import * as Product from "../Controller/Product_Controller.js";
-import * as Vendor from "../Controller/Vendor_Controller.js"
+import * as Vendor from "../Controller/Vendor_Controller.js";
 
 const AdminRoute = express.Router();
 
@@ -61,9 +61,17 @@ AdminRoute.post(
 );
 AdminRoute.post("/getAllCategory", Category.getAllCategories);
 AdminRoute.get("/getUserById", Admin.authMiddleware, User.getUserById);
-AdminRoute.get("/getVendorById",Admin.authMiddleware,Vendor.getVendorProfile);
-AdminRoute.get("/getAllVendor",Admin.authMiddleware,Vendor.getAllVendors)
-AdminRoute.post("/approveVendor",Admin.authMiddleware,Vendor.approveVendor)
-AdminRoute.post("/deleteVendor",Admin.authMiddleware,Vendor.deleteVendor)
+AdminRoute.get("/getVendorById", Admin.authMiddleware, Vendor.getVendorProfile);
+AdminRoute.get("/listVendors", Admin.authMiddleware, Vendor.getAllVendors);
+
+AdminRoute.post("/deleteVendor", Admin.authMiddleware, Vendor.deleteVendor);
+AdminRoute.get(
+  "/productCountByVendor",
+  Admin.authMiddleware,
+  Vendor.countProductByVendor
+);
+AdminRoute.get("/bulkApprove", Admin.authMiddleware, Vendor.bulkApproveVendors);
+AdminRoute.post("/approveVendor", Admin.authMiddleware, Vendor.approveVendor);
+
 
 export default AdminRoute;

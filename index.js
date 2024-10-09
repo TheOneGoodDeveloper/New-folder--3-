@@ -2,6 +2,7 @@ import express from "express";
 import connectDatabase from "./Model/db.js";
 import AdminRoute from "./Routes/Admin_Route.js";
 import UserRoute from "./Routes/User_Route.js";
+import VendorRoute from "./Routes/Vendor_Route.js"
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -19,7 +20,7 @@ app.use(
     origin: "*",
   })
 );
-const port = 4000;
+const port = 3000;
 app.use(
   session({
     secret: "your_secret_key",
@@ -38,6 +39,7 @@ app.use(
 );
 
 app.use("/admin", AdminRoute);
+app.use("/vendor",VendorRoute)
 app.use("/", UserRoute);
 
 connectDatabase();

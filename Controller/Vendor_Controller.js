@@ -33,16 +33,9 @@ export const authMiddleware = (req, res, next) => {
 };
 export const registerVendor = async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      company_name,
-      phone_number,
-      password,
-      address,
-      bank_account,
-    } = req.body;
-
+    const { name, email, companyname, phone_number, password, gstin, address } =
+      req.body;
+    console.log(req.body);
     const existingVendor = await vendorModel.findOne({ email });
     if (existingVendor) {
       return res
@@ -51,122 +44,116 @@ export const registerVendor = async (req, res) => {
     }
 
     const hashed_password = await bcrypt.hash(password, 10);
-    const bankDetails = vendorBankDetails(bank_account);
-    const newVendor = new Vendor({
+    // const bank_account = vendorBankDetails(bankDetails);
+    const vendor_address = addressDetails(address);
+    // console.log(bank_account);
+    const newVendor = new vendorModel({
       name,
       email,
-      company_name,
+      company_name: companyname,
       phone_number,
       hashed_password,
-      address,
-      bank_account: bankDetails, // Attach bank details separately
+      gstin: gstin ? gstin : "",
+      address: vendor_address, // Attach bank details separately
     });
-    await newVendor
-      .save()
-      .then(() => {
-        return res.status(201).json({
-          status: true,
-          message: "Vendor registered successfully Wait for Admin to Verify",
-          vendor: {
-            id: newVendor._id,
-            name: newVendor.name,
-            email: newVendor.email,
-            company_name: newVendor.company_name,
-            phone_number: newVendor.phone_number,
-            address: newVendor.address,
-            bank_account: newVendor.bank_account,
-            status: "active",
-          },
-        });
-      })
-      .error((err) => {
-        console.log(err);
-        return res
-          .status(401)
-          .json({ status: false, message: "Error In Save Vender Details" });
-      });
+    await newVendor.save();
+
+    return res.status(201).json({
+      status: true,
+      message: "Vendor registered successfully Wait for Admin to Verify",
+      vendor: {
+        id: newVendor?._id,
+        name: newVendor?.name,
+        email: newVendor?.email,
+        company_name: newVendor?.company_name,
+        phone_number: newVendor?.phone_number,
+        address: newVendor?.address,
+        gstin: newVendor?.gstin,
+      },
+    });
   } catch (error) {
+    console.log(error); // Log the error for debugging
     res.status(500).json({
       status: false,
-      message: "Internel Server error",
+      message: "Internal Server Error",
       error: error.message,
     });
   }
 };
 
 export const vendorLogin = async (req, res) => {
-  if (req.user.role === "vendor") {
-    try {
-      const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-      // Check if email and password are provided
-      if (!email || !password) {
-        return res
-          .status(400)
-          .json({ status: false, message: "Please enter required fields" });
-      }
+    // Check if email and password are provided
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Please enter required fields" });
+    }
 
-      // Find the vendor by email
-      const existingVendor = await vendorModel.findOne({ email });
-      if (!existingVendor) {
-        return res
-          .status(404)
-          .json({ status: false, message: "Vendor not found" });
-      }
+    // Find the vendor by email
+    const existingVendor = await vendorModel.findOne({ email });
+    if (!existingVendor) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Vendor not found" });
+    }
 
-      // Check if the password is correct
-      const passwordMatch = await bcrypt.compare(
-        password,
-        existingVendor.hashed_password
-      );
-      if (!passwordMatch) {
-        return res
-          .status(401)
-          .json({ status: false, message: "Invalid password" });
-      }
+    // Check if the password is correct
+    const passwordMatch = await bcrypt.compare(
+      password,
+      existingVendor.hashed_password
+    );
+    if (!passwordMatch) {
+      return res
+        .status(401)
+        .json({ status: false, message: "Invalid password" });
+    }
+    if (!existingVendor._id || !existingVendor.email || !existingVendor.role) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Vendor data is incomplete" });
+    }
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        id: existingVendor._id,
+        email: existingVendor.email,
+        role: existingVendor.role,
+      },
+      process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited",
+      { expiresIn: "1h" }
+    );
 
-      // Generate JWT token
-      const token = jwt.sign(
-        {
+    // Update the vendor's status to 'active' if currently 'inactive'
+    if (existingVendor.status === "inactive") {
+      return res.status(400).json({
+        status: false,
+        message: "Be Patient for Admin Approval and Notify through Mail",
+      }); // Save the updated status
+    }
+
+    // Respond with the token and vendor details
+    return res
+      .status(200)
+      .header("auth-token", token)
+      .json({
+        status: true,
+        message: "Login successful",
+        token,
+        vendor: {
           id: existingVendor._id,
           email: existingVendor.email,
-          role: req.user.role,
+          name: existingVendor.name,
+          status: existingVendor.status, // Vendor's updated status
         },
-        process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited",
-        { expiresIn: "1h" }
-      );
-
-      // Update the vendor's status to 'active' if currently 'inactive'
-      if (existingVendor.status === "inactive") {
-        existingVendor.status = "active";
-        await existingVendor.save(); // Save the updated status
-      }
-
-      // Respond with the token and vendor details
-      return res
-        .status(200)
-        .header("auth-token", token)
-        .json({
-          status: true,
-          message: "Login successful",
-          token,
-          vendor: {
-            id: existingVendor._id,
-            email: existingVendor.email,
-            name: existingVendor.name,
-            status: existingVendor.status, // Vendor's updated status
-          },
-        });
-    } catch (error) {
-      console.error(error); // Log the error for debugging
-      return res
-        .status(500)
-        .json({ status: false, message: "Server error", error: error.message });
-    }
-  } else {
+      });
+  } catch (error) {
+    console.error(error); // Log the error for debugging
     return res
-      .status(403)
-      .json({ status: false, message: "Unauthorized access" });
+      .status(500)
+      .json({ status: false, message: "Server error", error: error.message });
   }
 };
 
@@ -242,8 +229,7 @@ export const getAllVendors = async (req, res) => {
           phone_number: vendor.phone_number,
           address: vendor.address,
           is_approved: vendor.is_approved,
-          status: vendor.status,
-          bank_account: vendor.bank_account, // Bank details can be included if necessary
+          status: vendor.status, // Bank details can be included if necessary
         })),
       });
     } catch (error) {
@@ -306,39 +292,29 @@ export const deleteVendor = async (req, res) => {
   }
 };
 // Example vendorBankDetails function
-const vendorBankDetails = (bank_account) => {
-  // Destructure properties from the bankAccount object
-  const {
-    account_holder_name,
-    bank_name,
-    account_number,
-    ifsc_code,
-    branch_name,
-    account_type,
-  } = bank_account;
 
-  // Validate bank account details
-  if (
-    !account_holder_name ||
-    !bank_name ||
-    !account_number ||
-    !ifsc_code ||
-    !branch_name ||
-    !account_type
-  ) {
-    throw new Error("Incomplete bank account details");
+const addressDetails = (addresses) => {
+  // Validate that addresses is an array and has at least one address object
+  if (!Array.isArray(addresses) || addresses.length === 0) {
+    throw new Error("No addresses provided");
   }
 
-  // Format the bank details according to your schema
-  return {
-    account_holder_name,
-    bank_name,
-    account_number,
-    ifsc_code,
-    branch_name,
-    account_type,
-    createdAt: new Date(), // Add a timestamp if needed
-  };
+  return addresses.map(({ flatNo, area, city, state, pincode }) => {
+    // Validate each address object
+    if (!flatNo || !area || !city || !state || !pincode) {
+      throw new Error("Incomplete address details");
+    }
+
+    // Format the address according to your schema
+    return {
+      flatNo: flatNo,
+      area: area,
+      city: city,
+      state: state,
+      pincode: pincode,
+      createdAt: new Date(), // Add a timestamp if needed
+    };
+  });
 };
 
 export const approveVendor = async (req, res) => {
@@ -362,7 +338,9 @@ export const approveVendor = async (req, res) => {
               .json({ status: true, message: "Vendor Approved Successfully" });
           })
           .err(() => {
-            return res.status(404).json({ status: false, message: "" });
+            return res
+              .status(404)
+              .json({ status: false, message: "Error In Approving Vendor" });
           });
       }
     } catch {
@@ -389,18 +367,123 @@ export const countProductByVendor = async (req, res) => {
       await productModel
         .findById({ vendorId: vendorId })
         .then((vendorProductList) => {
-          return res
-            .status(200)
-            .json({
-              status: true,
-              message: "product count fetched Successfully",
-              count: vendorProductList.length
-            });
+          return res.status(200).json({
+            status: true,
+            message: "product count fetched Successfully",
+            count: vendorProductList.length,
+          });
         });
     } catch {
       return res
         .status(404)
         .json({ status: false, message: "no product Found" });
     }
+  } else {
+    return res
+      .status(403)
+      .json({ status: false, message: "Unauthorized access" });
+  }
+};
+
+export const bulkApproveVendors = async (req, res) => {
+  try {
+    const { vendorIds } = req.body; // Array of vendor IDs to be approved
+
+    // Update the is_approved and status for all vendors in the array
+    const result = await vendorModel.updateMany(
+      { _id: { $in: vendorIds } },
+      { $set: { is_approved: true, status: "active" } }
+    );
+
+    if (result.nModified === 0) {
+      return res.status(404).json({ message: "No vendors found to approve." });
+    }
+
+    return res
+      .status(200)
+      .json({ message: `${result.nModified} vendors approved successfully.` });
+  } catch (error) {
+    console.error("Error approving vendors:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error. Please try again later." });
+  }
+};
+const vendorBankDetails = (bank_account, vendorId) => {
+  // Destructure properties from the bankAccount object
+  const [
+    {
+      accountHolderName,
+      accountNumber,
+      accountType,
+      ifscCode,
+      bankName,
+      branchName,
+      city,
+      state,
+    },
+  ] = bank_account;
+  // console.log(
+  //   accountHolderName,
+  //   accountNumber,
+  //   accountType,
+  //   ifscCode,
+  //   bankName,
+  //   branchName,
+  //   city,
+  //   state
+  // );
+  // Validate bank account details
+  if (
+    !accountHolderName ||
+    !bankName ||
+    !accountNumber ||
+    !ifscCode ||
+    !branchName ||
+    !city ||
+    !state ||
+    !accountType ||
+    !vendorId
+  ) {
+    throw new Error("Incomplete bank account details or Vendor Id Requried");
+  }
+
+  // Format the bank details according to your schema
+  return {
+    vendorId: vendorId,
+    account_holder_name: accountHolderName,
+    bank_name: bankName,
+    account_number: accountNumber,
+    ifsc_code: ifscCode,
+    branch_name: branchName,
+    city: city,
+    state: state,
+    account_type: accountType,
+    createdAt: new Date(), // Add a timestamp if needed
+  };
+};
+
+export const createBankAccount = async (req, res) => {
+  try {
+    // Format the bank account details using the vendorBankDetails function
+    const formattedBankDetails = vendorBankDetails(req.body, vendorId);
+
+    // Create a new bank account instance
+    const newBankAccount = new bankAccountModel(formattedBankDetails);
+
+    // Save the bank account to the database
+    await newBankAccount.save().then(() => {
+      return res
+        .status(201)
+        .json({ status: true, message: "Bank Details Submitted Successfully" });
+    });
+
+    // Return the saved bank account
+  } catch (error) {
+    console.error("Error creating bank account:", error);
+    res
+      .status(500)
+      .json({ status: false, message: "Failed to create bank account" });
+    throw new Error("Failed to create bank account");
   }
 };
