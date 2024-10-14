@@ -35,9 +35,9 @@ const handleFileUploads = (req, res, next) => {
 const checkProductExists = async (name, gender, size, color) => {
   return await productModel.findOne({
     name,
-    gender,
-    size,
-    color,
+    "variants.gender": gender,
+    "variants.size": size,
+    "variants.color": color,
   });
 };
 
@@ -45,12 +45,12 @@ const generateProductId = async (categoryId, productName) => {
   // Step 1: Sanitize product name (trim and convert to uppercase/lowercase if needed)
   const sanitizedProductName = productName.trim(0, 3);
 
-  // Step 2: Get the first letter of the product name
+  // Step 2: Get the first three letters of the product name
   const firstThree = sanitizedProductName.toUpperCase();
 
   // Step 3: Count the number of products in the same category
   const countInCategory = await productModel.countDocuments({
-    category: categoryId,
+    category_id: categoryId,
   });
 
   // Step 4: Fetch the category number (cat_no) from the category schema
@@ -58,7 +58,7 @@ const generateProductId = async (categoryId, productName) => {
   const categoryNumber = category.cat_no;
 
   // Step 5: Generate the new product ID
-  const newProductId = `PAT0${countInCategory + 1}CAT0${categoryNumber}`;
+  const newProductId = `CAT0${categoryNumber}PAT0${countInCategory + 1}`;
 
   return newProductId;
 };
@@ -67,7 +67,6 @@ export const createProduct = async (req, res) => {
   try {
     // Authorization check
     if (req.user.role !== "admin") {
-      console.log(req.body);
       res.status(401).json({ error: "Unauthorized access" });
       return;
     }
@@ -84,24 +83,48 @@ export const createProduct = async (req, res) => {
     const {
       name,
       description,
-      price,
-      category,
-      stock_quantity,
-      gender,
-      size,
-      color,
+      MRP,
+      offer_percentage,
+      final_price,
+      gst_percentage,
+      price_with_gst,
+      category_id,
+      total_stock,
+      variants,
+      product_details,
+      country_of_origin,
+      seller_details,
     } = req.body;
-    if (!name || !description || !price || !category) {
+
+    if (
+      !name ||
+      !description ||
+      !MRP ||
+      !final_price ||
+      !gst_percentage ||
+      !price_with_gst ||
+      !category_id
+    ) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
 
-    // Check if the product already exists based on name, gender, size, and color
-    const existingProduct = await checkProductExists(name, gender, size, color);
-    if (existingProduct) {
-      return res
-        .status(400)
-        .json({ error: "Product with these specifications already exists" });
+    // Check if the product already exists based on name, gender, size, and color in variants
+    for (let variant of variants) {
+      const { gender, size, color } = variant;
+      const existingProduct = await checkProductExists(
+        name,
+        gender,
+        size,
+        color
+      );
+      if (existingProduct) {
+        return res
+          .status(400)
+          .json({
+            error: `Product with these specifications already exists: ${name} (${gender}, ${size}, ${color})`,
+          });
+      }
     }
 
     // Process uploaded files and prepare for saving
@@ -113,22 +136,29 @@ export const createProduct = async (req, res) => {
       return newPath;
     });
 
-    // Generate a product ID and create a new product entry
-    const productId = await generateProductId(category, name);
+    // Generate a product ID
+    const productId = await generateProductId(category_id, name);
+
+    // Prepare new product data
     const newProductData = {
       product_id: productId,
       name,
       description,
-      price,
-      category,
-      vendorId: req.user.role,
-      stock_quantity,
-      gender,
-      size,
-      color,
+      MRP,
+      offer_percentage,
+      final_price,
+      gst_percentage,
+      price_with_gst,
+      category_id,
+      total_stock,
+      variants,
+      product_details,
+      country_of_origin,
+      seller_details,
       images,
     };
 
+    // Create a new product instance and save to database
     const newProduct = new productModel(newProductData);
     await newProduct.save();
 

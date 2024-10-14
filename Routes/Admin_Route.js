@@ -61,7 +61,7 @@ AdminRoute.post(
 );
 AdminRoute.post("/getAllCategory", Category.getAllCategories);
 AdminRoute.get("/getUserById", Admin.authMiddleware, User.getUserById);
-AdminRoute.get("/getVendorById", Admin.authMiddleware, Vendor.getVendorProfile);
+AdminRoute.post("/getVendorById", Admin.authMiddleware, Vendor.getVendorProfile);
 AdminRoute.get("/listVendors", Admin.authMiddleware, Vendor.getAllVendors);
 
 AdminRoute.post("/deleteVendor", Admin.authMiddleware, Vendor.deleteVendor);

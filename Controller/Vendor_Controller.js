@@ -409,7 +409,7 @@ export const bulkApproveVendors = async (req, res) => {
       .json({ message: "Server error. Please try again later." });
   }
 };
-const vendorBankDetails = (bank_account, vendorId) => {
+const vendorBankDetails = (bank_account, vendorID) => {
   // Destructure properties from the bankAccount object
   const [
     {
@@ -443,14 +443,14 @@ const vendorBankDetails = (bank_account, vendorId) => {
     !city ||
     !state ||
     !accountType ||
-    !vendorId
+    !vendorID
   ) {
     throw new Error("Incomplete bank account details or Vendor Id Requried");
   }
 
   // Format the bank details according to your schema
   return {
-    vendorId: vendorId,
+    vendorId: vendorID,
     account_holder_name: accountHolderName,
     bank_name: bankName,
     account_number: accountNumber,
