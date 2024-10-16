@@ -123,7 +123,7 @@ export const vendorLogin = async (req, res) => {
         role: existingVendor.role,
       },
       process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited",
-      { expiresIn: "1h" }
+      { expiresIn: "5h" }
     );
 
     // Update the vendor's status to 'active' if currently 'inactive'

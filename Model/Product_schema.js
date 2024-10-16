@@ -33,12 +33,8 @@ const productSchema = new mongoose.Schema(
     variants: [
       {
         variant_id: {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true, // Unique identifier for each variant
-        },
-        color: {
           type: String,
-          required: true, // Color attribute for the variant
+          required: true, // Unique identifier for each variant
         },
         size: {
           type: String,
@@ -58,7 +54,7 @@ const productSchema = new mongoose.Schema(
     product_details: [
       {
         detail_id: {
-          type: mongoose.Schema.Types.ObjectId,
+          type: String,
           required: true, // Unique identifier for each detail set
         },
         sleeve_details: {
@@ -145,6 +141,9 @@ const productSchema = new mongoose.Schema(
       min: 0, // Must be non-negative
       max: 5, // Rating should not exceed 5
     },
+    is_deleted:{
+      type:Boolean,
+    }
   },
   { timestamps: true } // Automatically manage createdAt and updatedAt
 );

@@ -63,10 +63,19 @@ const generateProductId = async (categoryId, productName) => {
   return newProductId;
 };
 
+const generateVariantId = (productId, size,color) => {
+  // Generate variant ID using product ID and size
+  return `${productId}-${size.toUpperCase()}-${color.toUpperCase()}`;
+};
+const generateProductDetailsId = (productId, size,color) => {
+  // Generate variant ID using product ID and size
+  return `${productId}-${size.toUpperCase()}-${color.toUpperCase()}`;
+};
 export const createProduct = async (req, res) => {
+  console.log(req.user);
   try {
     // Authorization check
-    if (req.user.role !== "admin") {
+    if (req.user.role !== "vendor") {
       res.status(401).json({ error: "Unauthorized access" });
       return;
     }
@@ -78,6 +87,8 @@ export const createProduct = async (req, res) => {
         resolve();
       });
     });
+    console.log(req.body);
+    console.log(req.files);
 
     // Extract and validate required fields from request body
     const {
@@ -85,28 +96,19 @@ export const createProduct = async (req, res) => {
       description,
       MRP,
       offer_percentage,
-      final_price,
+      color,
       gst_percentage,
-      price_with_gst,
-      category_id,
-      total_stock,
+      category,
       variants,
       product_details,
       country_of_origin,
       seller_details,
     } = req.body;
 
-    if (
-      !name ||
-      !description ||
-      !MRP ||
-      !final_price ||
-      !gst_percentage ||
-      !price_with_gst ||
-      !category_id
-    ) {
-      res.status(400).json({ error: "Missing required fields" });
-      return;
+    if (!name || !description || !MRP || !category || !variants) {
+      return res
+        .status(400)
+        .json({ status: false, error: "Missing required fields" });
     }
 
     // Check if the product already exists based on name, gender, size, and color in variants
@@ -119,11 +121,9 @@ export const createProduct = async (req, res) => {
         color
       );
       if (existingProduct) {
-        return res
-          .status(400)
-          .json({
-            error: `Product with these specifications already exists: ${name} (${gender}, ${size}, ${color})`,
-          });
+        return res.status(400).json({
+          error: `Product with these specifications already exists: ${name} (${gender}, ${size}, ${color})`,
+        });
       }
     }
 
@@ -137,8 +137,70 @@ export const createProduct = async (req, res) => {
     });
 
     // Generate a product ID
-    const productId = await generateProductId(category_id, name);
+    const productId = await generateProductId(category, name);
+    const UniqueVariants = variants.map((variant) => {
+      return {
+        variant_id: generateVariantId(productId, variant.size,variant.color), // Generate variant ID using productId and size
+        ...variant,
+      };
+    });
+    const UniqueDetailsId = product_details.map(()=>{
+      return {
+        detail_id: generateProductDetailsId(productId, variant.size,variant.color), // Generate variant ID using productId and size
+        ...product_details,
+      };
+    })
+    console.log(UniqueVariants);
 
+    const processedSellerDetails = {
+      name: seller_details[0]?.seller_name || "Unknown",
+      location: seller_details[0]?.seller_location || "Unknown",
+    };
+    const calculateGST = (MRP, gstPercentage) => {
+      // Ensure both MRP and GST percentage are numbers
+      const MRPValue = parseFloat(MRP);
+      const gstPercentageValue = parseFloat(gstPercentage);
+
+      if (isNaN(MRPValue) || isNaN(gstPercentageValue)) {
+        throw new Error("Both MRP and GST percentage must be valid numbers");
+      }
+      const discount_price = MRPValue - MRPValue * (offer_percentage / 100);
+      // Convert percentage to decimal
+      const gstDecimal = gstPercentageValue / 100;
+
+      // Calculate GST amount
+      const gstAmount = discount_price * gstDecimal;
+
+      // Calculate final price including GST
+      const priceWithGST = discount_price + gstAmount;
+      const commission = discount_price - discount_price * (2 / 100);
+      const finalPrice = discount_price + gstAmount + commission;
+
+      return {
+        gstAmount: gstAmount.toFixed(2), // Rounded to 2 decimal places
+        priceWithGST: priceWithGST.toFixed(2),
+        finalPrice: finalPrice.toFixed(2),
+      };
+    };
+    // Calculate total stock function
+    const calculateTotalStock = (variants) => {
+      if (!Array.isArray(variants)) {
+        throw new Error("Variants should be an array");
+      }
+
+      return variants.reduce((totalStock, variant) => {
+        const stockValue = parseInt(variant.stock, 10);
+
+        if (isNaN(stockValue)) {
+          throw new Error("Each variant should have a valid stock number");
+        }
+
+        return totalStock + stockValue;
+      }, 0); // Initial total stock is 0
+    };
+
+    const gstResult = calculateGST(MRP, gst_percentage);
+    const totalStock = calculateTotalStock(UniqueVariants);
     // Prepare new product data
     const newProductData = {
       product_id: productId,
@@ -146,15 +208,17 @@ export const createProduct = async (req, res) => {
       description,
       MRP,
       offer_percentage,
-      final_price,
+      color,
       gst_percentage,
-      price_with_gst,
-      category_id,
-      total_stock,
-      variants,
+      price_with_gst: gstResult.priceWithGST,
+      final_price: gstResult.finalPrice,
+      category_id: category,
+      vendor_id: req.user.id,
+      total_stock: totalStock,
+      variants: UniqueVariants,
       product_details,
       country_of_origin,
-      seller_details,
+      seller_details: processedSellerDetails,
       images,
     };
 
