@@ -7,7 +7,7 @@ const cartSchema = new mongoose.Schema(
       ref: "User", // Assuming you have a User model
       required: true,
     },
-    products: [
+    items: [
       {
         product: {
           type: mongoose.Schema.Types.ObjectId,
@@ -26,7 +26,7 @@ const cartSchema = new mongoose.Schema(
         size: {
           type: String,
           required: true,
-          enum: ["s", "m", "l", "xl", "xxl"], // Same size enums as in Product schema
+         
         },
         color: {
           type: String,
@@ -42,12 +42,7 @@ const cartSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-cartSchema.pre('save', function (next) {
-  this.total_price = this.products.reduce((total, product) => {
-    return total + product.price * product.quantity;
-  }, 0);
-  next();
-});
+
 
 
 export const cartModel = mongoose.model("Cart", cartSchema);

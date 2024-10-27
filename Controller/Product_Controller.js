@@ -32,12 +32,12 @@ const handleFileUploads = (req, res, next) => {
 };
 
 // Function to check if the product exists
-const checkProductExists = async (name, gender, size, color) => {
+const checkProductExists = async (gender, size, color) => {
   return await productModel.findOne({
-    name,
     "variants.gender": gender,
     "variants.size": size,
-    "variants.color": color,
+    // "variants.color": color,
+    color,
   });
 };
 
@@ -63,13 +63,13 @@ const generateProductId = async (categoryId, productName) => {
   return newProductId;
 };
 
-const generateVariantId = (productId, size,color) => {
+const generateVariantId = (productId, size, color) => {
   // Generate variant ID using product ID and size
-  return `${productId}-${size.toUpperCase()}-${color.toUpperCase()}`;
+  return `${productId}-${size.toUpperCase()}-${color}`;
 };
-const generateProductDetailsId = (productId, size,color) => {
+const generateProductDetailsId = (productId, size, color) => {
   // Generate variant ID using product ID and size
-  return `${productId}-${size.toUpperCase()}-${color.toUpperCase()}`;
+  return `${productId}-${size.toUpperCase()}-${color}`;
 };
 export const createProduct = async (req, res) => {
   console.log(req.user);
@@ -114,15 +114,10 @@ export const createProduct = async (req, res) => {
     // Check if the product already exists based on name, gender, size, and color in variants
     for (let variant of variants) {
       const { gender, size, color } = variant;
-      const existingProduct = await checkProductExists(
-        name,
-        gender,
-        size,
-        color
-      );
+      const existingProduct = await checkProductExists(gender, size, color);
       if (existingProduct) {
         return res.status(400).json({
-          error: `Product with these specifications already exists: ${name} (${gender}, ${size}, ${color})`,
+          error: `Product with these specifications already exists:  (${gender}, ${size}, ${color})`,
         });
       }
     }
@@ -140,48 +135,63 @@ export const createProduct = async (req, res) => {
     const productId = await generateProductId(category, name);
     const UniqueVariants = variants.map((variant) => {
       return {
-        variant_id: generateVariantId(productId, variant.size,variant.color), // Generate variant ID using productId and size
+        variant_id: generateVariantId(productId, variant.size, color), // Generate variant ID using productId and size
         ...variant,
       };
     });
-    const UniqueDetailsId = product_details.map(()=>{
+    const UniqueDetails = variants.map((variant, index) => {
       return {
-        detail_id: generateProductDetailsId(productId, variant.size,variant.color), // Generate variant ID using productId and size
-        ...product_details,
+        detail_id: generateProductDetailsId(productId, variant.size, color), // Generate unique ID
+        ...product_details[index], // Merge with corresponding product details
       };
-    })
+    });
     console.log(UniqueVariants);
 
     const processedSellerDetails = {
       name: seller_details[0]?.seller_name || "Unknown",
       location: seller_details[0]?.seller_location || "Unknown",
     };
-    const calculateGST = (MRP, gstPercentage) => {
-      // Ensure both MRP and GST percentage are numbers
+    const calculateGST = (MRP, gst_Percentage, offer_percentage) => {
+      // Ensure MRP, GST percentage, and offer percentage are numbers
       const MRPValue = parseFloat(MRP);
-      const gstPercentageValue = parseFloat(gstPercentage);
+      const gstPercentageValue = parseFloat(gst_Percentage);
+      const offerPercentageValue = parseFloat(offer_percentage);
 
-      if (isNaN(MRPValue) || isNaN(gstPercentageValue)) {
-        throw new Error("Both MRP and GST percentage must be valid numbers");
+      if (
+        isNaN(MRPValue) ||
+        isNaN(gstPercentageValue) ||
+        isNaN(offerPercentageValue)
+      ) {
+        throw new Error(
+          "MRP, GST percentage, and offer percentage must be valid numbers"
+        );
       }
-      const discount_price = MRPValue - MRPValue * (offer_percentage / 100);
-      // Convert percentage to decimal
+
+      // Calculate discounted price
+      const discount_price = MRPValue + (MRPValue * (offerPercentageValue / 100));
+
+      // Convert GST percentage to decimal
       const gstDecimal = gstPercentageValue / 100;
 
       // Calculate GST amount
       const gstAmount = discount_price * gstDecimal;
 
-      // Calculate final price including GST
+      // Calculate price with GST
       const priceWithGST = discount_price + gstAmount;
-      const commission = discount_price - discount_price * (2 / 100);
-      const finalPrice = discount_price + gstAmount + commission;
+
+      // Calculate commission (2% of the discounted price)
+      const commission = discount_price * (2 / 100);
+
+      // Calculate final price by adding the commission to the price including GST
+      const finalPrice = priceWithGST + commission ;
 
       return {
-        gstAmount: gstAmount.toFixed(2), // Rounded to 2 decimal places
-        priceWithGST: priceWithGST.toFixed(2),
-        finalPrice: finalPrice.toFixed(2),
+        gstAmount: gstAmount.toFixed(2), // GST amount rounded to 2 decimal places
+        priceWithGST: priceWithGST.toFixed(2), // Price including GST
+        finalPrice: finalPrice.toFixed(2), // Final price after adding commission
       };
     };
+
     // Calculate total stock function
     const calculateTotalStock = (variants) => {
       if (!Array.isArray(variants)) {
@@ -199,7 +209,7 @@ export const createProduct = async (req, res) => {
       }, 0); // Initial total stock is 0
     };
 
-    const gstResult = calculateGST(MRP, gst_percentage);
+    const gstResult = calculateGST(MRP, gst_percentage, offer_percentage);
     const totalStock = calculateTotalStock(UniqueVariants);
     // Prepare new product data
     const newProductData = {
@@ -216,7 +226,7 @@ export const createProduct = async (req, res) => {
       vendor_id: req.user.id,
       total_stock: totalStock,
       variants: UniqueVariants,
-      product_details,
+      product_details: UniqueDetails,
       country_of_origin,
       seller_details: processedSellerDetails,
       images,
@@ -245,80 +255,62 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     // Check user authorization
-    if (req.user.role !== "admin") {
+
+    if (req.user.role !== "vendor") {
       return res
         .status(401)
-        .json({ status: false, message: "No Authorization" });
+        .json({ status: false, error: "Unauthorized access" });
     }
 
-    // Handle file uploads
+    // Handle file uploads with a promise
     await new Promise((resolve, reject) => {
       handleFileUploads(req, res, (err) => {
-        if (err) {
-          return reject(err);
-        }
+        if (err) return reject(err);
         resolve();
       });
     });
 
-    // Extract fields from req.body
+    // Extract and validate required fields from request body
     const {
-      id,
+      productId,
       name,
       description,
-      price,
-      categoryId,
-      stock_quantity,
-      gender,
-      size,
+      MRP,
+      offer_percentage,
       color,
+      gst_percentage,
+      category,
+      variants,
+      product_details,
+      country_of_origin,
+      seller_details,
     } = req.body;
     console.log(req.body);
+    console.log(req.files);
     // Check if product ID is provided
-    if (!id) {
+    if (!productId) {
       return res
         .status(400)
-        .json({ status: false, message: "Product ID is required" });
+        .json({ status: false, error: "Product ID is required" });
     }
 
-    // Check required fields
-    if (
-      !name ||
-      !description ||
-      !price ||
-      !categoryId ||
-      !stock_quantity ||
-      !gender ||
-      !size ||
-      !color
-    ) {
+    // Validate required fields
+    if (!name || !description || !MRP || !category || !variants) {
       return res
         .status(400)
-        .json({ status: false, message: "Please enter the required fields" });
+        .json({ status: false, error: "Missing required fields" });
     }
-
+    console.log(req.body);
     // Find existing product by ID
-    const existingProduct = await productModel.findById(id);
+    const existingProduct = await productModel.findById(req.body.productId);
     if (!existingProduct) {
       return res
         .status(404)
-        .json({ status: false, message: "Product not found" });
+        .json({ status: false, error: "Product not found" });
     }
 
-    // Prepare update data
-    const updateData = {
-      name: name || existingProduct.name,
-      description: description || existingProduct.description,
-      price: price || existingProduct.price,
-      category: categoryId || existingProduct.category,
-      stock_quantity: stock_quantity || existingProduct.stock_quantity,
-      size: size || existingProduct.size,
-      color: color || existingProduct.color,
-      gender: gender || existingProduct.gender,
-      isProfileUpdated: true,
-    };
-
     // Process and rename files if new ones are uploaded
+    let images = existingProduct.images;
     if (req.files && req.files.length > 0) {
       // Remove old images
       existingProduct.images.forEach((imagePath) => {
@@ -328,20 +320,62 @@ export const updateProduct = async (req, res) => {
       });
 
       // Save new images
-      const images = req.files.map((file) => {
-        const ext = path.extname(file.originalname);
-        const date = Date.now();
-        const newFilename = `product-${date}${ext}`;
-        const newFilePath = path.join("Assets/Products", newFilename);
-        fs.renameSync(file.path, newFilePath);
-        return newFilePath;
+      images = req.files.map((file) => {
+        const extension = path.extname(file.originalname);
+        const uniqueName = `product-${Date.now()}${extension}`;
+        const newPath = path.join("Assets/Products", uniqueName);
+        fs.renameSync(file.path, newPath);
+        return newPath;
       });
-
-      // Assign new images to product
-      updateData.images = images;
     }
 
-    // Update product
+    // Update product details and variants
+    // const UniqueVariants = variants.map((variant) => {
+    //   return {
+    //     variant_id: generateVariantId(id, variant.size, color),
+    //     ...variant,
+    //   };
+    // });
+
+    // const UniqueDetails = variants.map((variant, index) => {
+    //   return {
+    //     detail_id: generateProductDetailsId(id, variant.size, color),
+    //     ...product_details[index],
+    //   };
+    // });
+
+    const processedSellerDetails = {
+      name:
+        seller_details[0]?.seller_name || existingProduct.seller_details.name,
+      location:
+        seller_details[0]?.seller_location ||
+        existingProduct.seller_details.location,
+    };
+
+    // Calculate GST and final price
+    const gstResult = calculateGST(MRP, gst_percentage);
+    const totalStock = calculateTotalStock(UniqueVariants);
+
+    // Prepare updated product data
+    const updateData = {
+      name,
+      description,
+      MRP,
+      offer_percentage,
+      color,
+      gst_percentage,
+      price_with_gst: gstResult.priceWithGST,
+      final_price: gstResult.finalPrice,
+      category_id: category,
+      total_stock: totalStock,
+      variants,
+      product_details,
+      country_of_origin,
+      seller_details: processedSellerDetails,
+      images,
+    };
+
+    // Update product in the database
     const updatedProduct = await productModel.findByIdAndUpdate(
       id,
       { $set: updateData },
@@ -351,27 +385,29 @@ export const updateProduct = async (req, res) => {
     if (!updatedProduct) {
       return res
         .status(404)
-        .json({ status: false, message: "Product update failed" });
+        .json({ status: false, error: "Product update failed" });
     }
 
-    console.log("Product updated successfully");
+    // Indicate successful product update
     return res.status(200).json({
       status: true,
       message: "Product updated successfully",
       data: updatedProduct,
     });
   } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ status: false, message: "Internal Server Error" });
+    // Handle any errors that occur
+    console.error("Error in product update:", error);
+    return res.status(500).json({
+      status: false,
+      error: "Server error occurred while updating the product",
+    });
   }
 };
 
 export const deleteProduct = async (req, res) => {
   try {
     // Check user authorization
-    if (req.user.role !== "admin") {
+    if (req.user.role !== "vendor") {
       return res
         .status(401)
         .json({ status: false, message: "No Authorization" });
@@ -493,7 +529,7 @@ const filterByPrice = (query, minPrice, maxPrice) => {
 
 export const productByCategory = async (req, res) => {
   try {
-    const { category, gender, minPrice, maxPrice } = req.query;
+    const { category } = req.query;
 
     // Initialize an empty query object
     const query = {};
@@ -501,8 +537,9 @@ export const productByCategory = async (req, res) => {
     // Apply category filter by finding the category by name
     if (category) {
       const categoryData = await categoryModel.findOne({ name: category });
+      console.log(categoryData);
       if (categoryData) {
-        query.category = categoryData._id; // Use the ObjectId of the found category
+        query.category_id = categoryData._id; // Use the ObjectId of the found category
       } else {
         // If no category found, return no products
         return res.status(404).json({
@@ -513,16 +550,16 @@ export const productByCategory = async (req, res) => {
     }
 
     // Apply other filters
-    gender ? (query.gender = gender) : "";
-    if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) query.price.$gte = minPrice;
-      if (maxPrice) query.price.$lte = maxPrice;
-    }
+    // if (gender) query.gender = gender;
+    // if (minPrice || maxPrice) {
+    //   query.final_price = {};
+    //   if (minPrice) query.final_price.$gte = minPrice;
+    //   if (maxPrice) query.final_price.$lte = maxPrice;
+    // }
 
-    // Fetch products based on the combined filters
-    const products = await productModel.find(query).populate("category");
-
+    // Fetch products based on the combined filters and populate category
+    const products = await productModel.find(query).populate("category_id");
+    console.log(products);
     // Return the filtered products
     return res.status(200).json({
       success: true,
@@ -539,6 +576,7 @@ export const productByCategory = async (req, res) => {
 };
 
 export const getProductById = async (req, res) => {
+  console.log(req.query);
   try {
     const { productId } = req.query;
     if (!productId) {

@@ -62,7 +62,7 @@ const vendorSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["active", "inactive"],
-      default: "inactive",
+      default: "active",
     },
     // bank_account: {
     //     account_holder_name: { 

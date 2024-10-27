@@ -3,12 +3,17 @@ import { addressModel } from "../Model/Address_schema.js";
 export const addAddress = async (req, res) => {
   if (req.user.role === "customer") {
     try {
-      const { address_line, city, state, postalCode, country, isDefault } =
-        address;
+      const { street, area, city, state, postalCode, country, isDefault } =
+        req.body;
+
+      if (isDefault) {
+        await addressModel.updateMany({ userId: req.user._id }, { isDefault: false });
+      }
 
       const newAddress = new addressModel({
         userId: req.user._id,
-        address_line,
+        street,
+        area,
         city,
         state,
         postalCode,
@@ -38,25 +43,24 @@ export const updateAddress = async (req, res) => {
     try {
       const { addressId, address } = req.body;
 
-      // Find the address by ID
       const existingAddress = await addressModel.findOne({
         _id: addressId,
         userId: req.user._id,
       });
 
       if (existingAddress) {
-        // Update the existing address fields
-        existingAddress.address_line =
-          address.address_line || existingAddress.address_line;
+        existingAddress.street = address.street || existingAddress.street;
+        existingAddress.area = address.area || existingAddress.area;
         existingAddress.city = address.city || existingAddress.city;
         existingAddress.state = address.state || existingAddress.state;
-        existingAddress.postalCode =
-          address.postalCode || existingAddress.postalCode;
+        existingAddress.postalCode = address.postalCode || existingAddress.postalCode;
         existingAddress.country = address.country || existingAddress.country;
-        existingAddress.isDefault =
-          address.isDefault !== undefined
-            ? address.isDefault
-            : existingAddress.isDefault;
+        existingAddress.isDefault = address.isDefault !== undefined ? address.isDefault : existingAddress.isDefault;
+
+        if (address.isDefault) {
+          await addressModel.updateMany({ userId: req.user._id }, { isDefault: false });
+          existingAddress.isDefault = true;
+        }
 
         await existingAddress.save();
         return res.status(200).json({
@@ -65,9 +69,7 @@ export const updateAddress = async (req, res) => {
           address: existingAddress,
         });
       } else {
-        return res
-          .status(404)
-          .json({ success: false, message: "Address not found" });
+        return res.status(404).json({ success: false, message: "Address not found" });
       }
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
@@ -81,34 +83,27 @@ export const updateAddress = async (req, res) => {
 };
 
 export const deleteAddress = async (req, res) => {
-    if (req.user.role === "customer") {
-        try {
-            const { addressId } = req.body;
+  if (req.user.role === "customer") {
+    try {
+      const { addressId } = req.body;
 
-            // Find and remove the address
-            const result = await addressModel.deleteOne({
-                _id: addressId,
-                userId: req.user._id,
-            });
+      const result = await addressModel.deleteOne({
+        _id: addressId,
+        userId: req.user._id,
+      });
 
-            if (result.deletedCount > 0) {
-                return res
-                .status(200)
-                .json({ success: true, message: "Address deleted successfully" });
-            } else {
-                return res
-                .status(404)
-                .json({ success: false, message: "Address not found" });
-            }
-        } catch (error) {
-                return res.status(400).json({ success: false, message: error.message });
-        }
-    } else {
-        return res
-        .status(403)
-        .json({
-            success: false,
-            message: "Forbidden: Only customers can delete their addresses",
-        });
+      if (result.deletedCount > 0) {
+        return res.status(200).json({ success: true, message: "Address deleted successfully" });
+      } else {
+        return res.status(404).json({ success: false, message: "Address not found" });
+      }
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
     }
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: "Forbidden: Only customers can delete their addresses",
+    });
+  }
 };

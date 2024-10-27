@@ -126,8 +126,8 @@ export const vendorLogin = async (req, res) => {
       { expiresIn: "5h" }
     );
 
-    // Update the vendor's status to 'active' if currently 'inactive'
-    if (existingVendor.status === "inactive") {
+    // Update the vendor's status to 'true' if currently 'false'
+    if (existingVendor.is_approved === false) {
       return res.status(400).json({
         status: false,
         message: "Be Patient for Admin Approval and Notify through Mail",
@@ -320,33 +320,34 @@ const addressDetails = (addresses) => {
 export const approveVendor = async (req, res) => {
   if (req.user.role == "admin") {
     try {
-      const { vendorId, approve_status } = req.body;
-
+      const { vendorId, status } = req.body;
+      console.log(req.body);
       if (!vendorId) {
         return res
           .status(401)
           .json({ status: false, message: "Vendor ID Required" });
-      } else {
-        await vendorModel
-          .create({
-            _id: vendorId,
-            is_approved: approve_status,
-          })
-          .then((approved) => {
-            return res
-              .status(200)
-              .json({ status: true, message: "Vendor Approved Successfully" });
-          })
-          .err(() => {
-            return res
-              .status(404)
-              .json({ status: false, message: "Error In Approving Vendor" });
-          });
       }
-    } catch {
+
+      const approvedVendor = await vendorModel.findByIdAndUpdate(
+        vendorId, // This is the ID of the document to update
+        { is_approved: status }, // This is the update object
+        { new: true } // Optional: returns the updated document
+      );
+
+      if (!approvedVendor) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Vendor not found" });
+      }
+
+      return res
+        .status(200)
+        .json({ status: true, message: "Vendor Approved Successfully" });
+      
+    } catch (err) {
       return res
         .status(500)
-        .json({ status: false, message: "Internal Server Error" });
+        .json({ status: false, message: "Internal Server Error", error: err.message });
     }
   } else {
     return res
@@ -354,6 +355,7 @@ export const approveVendor = async (req, res) => {
       .json({ status: false, message: "Unauthorized access" });
   }
 };
+
 
 export const countProductByVendor = async (req, res) => {
   if (req.user.role == "admin") {
@@ -485,5 +487,22 @@ export const createBankAccount = async (req, res) => {
       .status(500)
       .json({ status: false, message: "Failed to create bank account" });
     throw new Error("Failed to create bank account");
+  }
+};
+
+export const getAllProducts = async (req, res) => {
+  try {
+    const products = await productModel
+      .find({ vendor_id: req.user.id })
+      .populate("category_id", "name") // Populate the category name from Category model
+      .exec();
+
+    return res
+      .status(200)
+      .json({ status: true, message: "Product details", products });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: false, message: "Error fetching products", error });
   }
 };
