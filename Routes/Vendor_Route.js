@@ -28,7 +28,7 @@ VendorRoute.post(
 VendorRoute.get("/productList", Vendor.authMiddleware,Vendor.getAllProducts);
 VendorRoute.post("/getAllCategory", Category.getAllCategories);
 VendorRoute.get("/getProductById",Vendor.authMiddleware,Product.getProductById)
-
+VendorRoute.get("/vendor_dashboard",Vendor.authMiddleware,Vendor.vendor_dashboard)
 // VendorRoute.get("/productSaleByVendor",Vendor.authMiddleware,Vendor.productSaleByVendor)
 
 

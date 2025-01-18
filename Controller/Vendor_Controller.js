@@ -2,6 +2,7 @@ import { vendorModel } from "../Model/Vendor_schema.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { productModel } from "../Model/Product_schema.js";
+import { orderModel } from "../Model/Order_schema.js";
 
 export const authMiddleware = (req, res, next) => {
   const token = req?.headers["authorization"]
@@ -504,5 +505,49 @@ export const getAllProducts = async (req, res) => {
     return res
       .status(500)
       .json({ status: false, message: "Error fetching products", error });
+  }
+};
+
+
+export const vendor_dashboard = async (req, res) => {
+  try {
+    const vendorId = req.user.id; // Assuming vendor authentication provides `req.user`
+    console.log(vendorId);
+    // Count total products added by the vendor
+    const productCount = await productModel.countDocuments({
+      vendor_id: vendorId
+    });
+    console.log(productCount);  
+    // Count orders containing products added by the vendor
+    const orderCount = await orderModel.countDocuments({
+      "items.vendor_id": vendorId,
+    });
+    console.log(orderCount);
+    // Calculate total sales amount for vendor's products
+    const totalSales = await orderModel.aggregate([
+      { $unwind: "$items" },
+      { $match: { "items.vendor_id": vendorId } },
+      { $group: { _id: null, total: { $sum: "$items.price" } } },
+    ]);
+    console.log(totalSales);
+    // Count out-of-stock products by the vendor
+    const outOfStockCount = await productModel.countDocuments({
+      vendor_id: vendorId,
+      stock: 0,
+    });
+
+    return res.status(200).json({
+      status: true,
+      data: {
+        productCount,
+        orderCount,
+        totalSales: totalSales[0]?.total || 0,
+        outOfStockCount,
+      },
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: false, message: "Internal server error", error });
   }
 };

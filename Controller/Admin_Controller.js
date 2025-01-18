@@ -2,6 +2,8 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { userModel } from "../Model/user_schema.js";
+import { productModel } from "../Model/Product_schema.js";
+import { orderModel } from "../Model/Order_schema.js";
 
 // Adjust the path to your user model
 
@@ -34,12 +36,10 @@ export const authMiddleware = async (req, res, next) => {
 
     // Check if the user has the required role
     if (user.role !== decoded.role) {
-      return res
-        .status(403)
-        .json({
-          status: false,
-          message: "Access denied: insufficient privileges",
-        });
+      return res.status(403).json({
+        status: false,
+        message: "Access denied: insufficient privileges",
+      });
     }
 
     // Attach the user to the request object for later use
@@ -55,7 +55,6 @@ export const authMiddleware = async (req, res, next) => {
     }
   }
 };
-
 
 export const adminLogin = async (req, res) => {
   try {
@@ -101,6 +100,47 @@ export const adminLogin = async (req, res) => {
           role: user.role,
         },
       });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: false, message: "Internal server error", error });
+  }
+};
+
+// export const admin_dashboard = async (req, res) => {
+
+// }
+export const admin_dashboard = async (req, res) => {
+  try {
+    // Count users
+    const userCount = await userModel.countDocuments({ is_deleted: false });
+
+    // Count products
+    const productCount = await productModel.countDocuments({
+      is_deleted: false,
+    });
+
+    // Count orders
+    const orderCount = await orderModel.countDocuments();
+
+    // Calculate total sales amount
+    const totalSales = await orderModel.aggregate([
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]);
+
+    // Count out of stock products
+    const outOfStockCount = await productModel.countDocuments({ stock: 0 });
+
+    return res.status(200).json({
+      status: true,
+      data: {
+        userCount,
+        productCount,
+        orderCount,
+        totalSales: totalSales[0]?.total || 0,
+        outOfStockCount,
+      },
+    });
   } catch (error) {
     return res
       .status(500)

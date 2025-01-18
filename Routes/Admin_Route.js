@@ -38,6 +38,7 @@ const upload = multer({
 });
 
 AdminRoute.post("/login", Admin.adminLogin);
+AdminRoute.get("/profile",Admin.authMiddleware,Admin.admin_dashboard)
 AdminRoute.get("/getAllUsers", Admin.authMiddleware, User.getAllUsers);
 AdminRoute.post("/productCreate", Admin.authMiddleware, Product.createProduct);
 AdminRoute.post("/updateProduct", Admin.authMiddleware, Product.updateProduct);
