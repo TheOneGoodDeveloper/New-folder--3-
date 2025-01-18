@@ -3,34 +3,59 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { userModel } from "../Model/user_schema.js";
 
-export const authMiddleware = (req, res, next) => {
-  const token = req?.headers["authorization"]
-    ? req?.headers["authorization"]
-    : "";
+// Adjust the path to your user model
+
+export const authMiddleware = async (req, res, next) => {
+  let token = req.headers["authorization"] ? req.headers["authorization"] : "";
+
+  // Remove Bearer prefix if it exists
+  if (token.startsWith("Bearer ")) {
+    token = token.slice(7, token.length).trim();
+  }
+
   if (!token) {
     return res
-      .status(200)
+      .status(401)
       .json({ status: false, message: "Token not provided" });
   }
-  // token = token.split(" ")[1];
 
-  jwt.verify(token, "Evvi_Solutions_Private_Limited", (err, decoded) => {
-    if (err) {
-      if (err.name === "TokenExpiredError") {
-        return res
-          .status(200)
-          .json({ status: false, statusCode: 700, message: "Token expired" });
-      } else {
-        return res
-          .status(200)
-          .json({ status: false, message: "Invalid token" });
-      }
+  try {
+    // Verify the token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited"
+    );
+    console.log(decoded);
+    // Find the user in the database
+    const user = await userModel.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ status: false, message: "User not found" });
     }
 
-    req.user = decoded;
+    // Check if the user has the required role
+    if (user.role !== decoded.role) {
+      return res
+        .status(403)
+        .json({
+          status: false,
+          message: "Access denied: insufficient privileges",
+        });
+    }
+
+    // Attach the user to the request object for later use
+    req.user = user;
     next();
-  });
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ status: false, statusCode: 700, message: "Token expired" });
+    } else {
+      return res.status(401).json({ status: false, message: "Invalid token" });
+    }
+  }
 };
+
 
 export const adminLogin = async (req, res) => {
   try {

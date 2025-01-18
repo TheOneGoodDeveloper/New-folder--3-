@@ -62,7 +62,7 @@ export const userLogin = async (req, res) => {
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited",
       {
-        expiresIn: "5h", // Token expiration time
+        expiresIn: "1h", // Token expiration time
       }
     );
     // console.log(token);
@@ -226,14 +226,18 @@ export const updateUser = async (req, res) => {
   if (req.user.role === "customer") {
     try {
       const { name, email, phone_number, address } = req.body;
-
+      console.log(req.body);
+      // console.log(req.params);
       // Update user information
       const updatedUser = await userModel.findByIdAndUpdate(
-        req.user._id, // Assuming req.user contains the authenticated user's ID
+        req.user.id, // Assuming req.user contains the authenticated user's ID
         { name, email, phone_number },
         { new: true, runValidators: true }
       );
-
+      if(updateUser.length == 0){
+          return res.json("user not updated")
+      }
+      console.log(updatedUser);
       // Check if the address field is present in the request body
       if (address) {
         if(address._id){

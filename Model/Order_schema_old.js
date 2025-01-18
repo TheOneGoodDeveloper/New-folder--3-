@@ -5,47 +5,40 @@ const orderSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: true
     },
     products: [
       {
         productId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Product',
-          required: true,
+          required: true
         },
         name: { type: String, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true }, // Price at the time of order
-        total: { type: Number, required: true }, // quantity * price
-      },
+        total: { type: Number, required: true }  // quantity * price
+      }
     ],
     shippingAddress: {
-      type: mongoose.Schema.Types.ObjectId, // Reference to address model
-      ref: 'Address', // Reference to the Address model
-      required: true,
+      fullName: { type: String, required: true },
+      addressLine1: { type: String, required: true },
+      addressLine2: { type: String },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      postalCode: { type: String, required: true },
+      country: { type: String, required: true },
+      phoneNumber: { type: String, required: true },
     },
     paymentMethod: {
       type: String,
-      enum: ['Credit Card', 'Debit Card', 'PayPal', 'Cash on Delivery', 'Razorpay'],
-      required: true,
+      enum: ['Credit Card', 'Debit Card', 'PayPal', 'Cash on Delivery'],
+      required: true
     },
     paymentStatus: {
       type: String,
       enum: ['Pending', 'Completed', 'Failed'],
-      default: 'Pending',
-    },
-    razorpayOrderId: {
-      type: String,
-      required: function () {
-        return this.paymentMethod === 'Razorpay';
-      },
-    },
-    razorpayPaymentId: {
-      type: String,
-    },
-    razorpaySignature: {
-      type: String,
+      default: 'Pending'
     },
     totalAmount: {
       type: Number,
@@ -62,11 +55,13 @@ const orderSchema = new mongoose.Schema(
     isDeleted: {
       type: Boolean,
       default: false,
-    },
+    }
   },
   {
-    timestamps: true, // Automatically add createdAt and updatedAt fields
+    timestamps: true // Automatically add createdAt and updatedAt fields
   }
 );
 
 export const orderModel = mongoose.model('Order', orderSchema);
+// module.exports = Order;
+

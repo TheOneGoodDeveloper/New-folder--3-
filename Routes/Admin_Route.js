@@ -6,7 +6,8 @@ import * as User from "../Controller/User_Controller.js";
 import * as Category from "../Controller/Category_Controller.js";
 import * as Product from "../Controller/Product_Controller.js";
 import * as Vendor from "../Controller/Vendor_Controller.js";
-
+import * as Order from "../Controller/Order_Controller.js"
+// import { authMiddleware } from "../Controller/Cart_Controller.js";
 const AdminRoute = express.Router();
 
 const storage = multer.diskStorage({
@@ -41,7 +42,7 @@ AdminRoute.get("/getAllUsers", Admin.authMiddleware, User.getAllUsers);
 AdminRoute.post("/productCreate", Admin.authMiddleware, Product.createProduct);
 AdminRoute.post("/updateProduct", Admin.authMiddleware, Product.updateProduct);
 AdminRoute.post("/deleteproduct", Admin.authMiddleware, Product.deleteProduct);
-AdminRoute.post("/productList", Admin.authMiddleware, Product.getAllProducts);
+AdminRoute.get("/productList", Admin.authMiddleware, Product.getAllProducts);
 AdminRoute.post(
   "/categoryCreate",
   upload.single("images"),
@@ -72,6 +73,6 @@ AdminRoute.get(
 );
 AdminRoute.get("/bulkApprove", Admin.authMiddleware, Vendor.bulkApproveVendors);
 AdminRoute.post("/approveVendor", Admin.authMiddleware, Vendor.approveVendor);
-
+AdminRoute.get("/allOrder",Admin.authMiddleware,Order.getAllOrders)
 
 export default AdminRoute;

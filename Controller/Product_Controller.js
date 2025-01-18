@@ -95,6 +95,7 @@ export const createProduct = async (req, res) => {
       name,
       description,
       MRP,
+      gender,
       offer_percentage,
       color,
       gst_percentage,
@@ -168,7 +169,7 @@ export const createProduct = async (req, res) => {
       }
 
       // Calculate discounted price
-      const discount_price = MRPValue + (MRPValue * (offerPercentageValue / 100));
+      const discount_price = MRPValue + MRPValue * (offerPercentageValue / 100);
 
       // Convert GST percentage to decimal
       const gstDecimal = gstPercentageValue / 100;
@@ -183,7 +184,7 @@ export const createProduct = async (req, res) => {
       const commission = discount_price * (2 / 100);
 
       // Calculate final price by adding the commission to the price including GST
-      const finalPrice = priceWithGST + commission ;
+      const finalPrice = priceWithGST + commission;
 
       return {
         gstAmount: gstAmount.toFixed(2), // GST amount rounded to 2 decimal places
@@ -215,10 +216,11 @@ export const createProduct = async (req, res) => {
     const newProductData = {
       product_id: productId,
       name,
+      gender,
       description,
       MRP,
       offer_percentage,
-      color,
+      color:color.toLowerCase(),
       gst_percentage,
       price_with_gst: gstResult.priceWithGST,
       final_price: gstResult.finalPrice,
@@ -274,6 +276,7 @@ export const updateProduct = async (req, res) => {
     const {
       productId,
       name,
+      gender,
       description,
       MRP,
       offer_percentage,
@@ -359,13 +362,14 @@ export const updateProduct = async (req, res) => {
     // Prepare updated product data
     const updateData = {
       name,
+      gender,
       description,
       MRP,
       offer_percentage,
-      color,
+      color:color.toLowerCase(),
       gst_percentage,
       price_with_gst: gstResult.priceWithGST,
-      final_price: gstResult.finalPrice,
+      final_price: Math.floor(gstResult.finalPrice),
       category_id: category,
       total_stock: totalStock,
       variants,
@@ -459,73 +463,151 @@ export const deleteProduct = async (req, res) => {
 
 export const getAllProducts = async (req, res) => {
   try {
-    const products = await productModel.find().populate("category").exec();
-    res.status(200).json(products);
+    const products = await productModel.find().populate("category_id").lean().exec();
+    res.status(200).json({ products, message: "Products fetched successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching products", error });
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Error fetching products", error: error.message });
   }
 };
+
+
+
+// export const filterProducts = async (req, res) => {
+//   try {
+//     const { color = [], categoryId = "", price = [], size = [] } = req.body;
+//     console.log(req.body);
+//     // console.log(req.params);
+    
+//     const filterConditions = {};
+
+//     // Apply color filter
+//     if (color.length > 0) {
+//       const trimmedColors = color.filter(Boolean).map((item) => item.trim());
+//       if (trimmedColors.length > 0) {
+//         filterConditions.color = { $in: trimmedColors };
+//       }
+//     }
+
+//     // Apply category filter
+//     if (categoryId) {
+//       filterConditions.category_id = categoryId.trim();
+//     }
+
+//     // Apply price filter (assumes price format is 'min - max')
+//     if (price.length > 0) {
+//       const [minPrice, maxPrice] = price[0].split(' - ').map((item) => parseInt(item, 10));
+//       if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+//         filterConditions.price = { $gte: minPrice, $lte: maxPrice };
+//       }
+//     }
+
+//     // Apply size filter
+//     if (size.length > 0) {
+//       const trimmedSizes = size.filter(Boolean).map((item) => item.trim());
+//       if (trimmedSizes.length > 0) {
+//         filterConditions.size = { $in: trimmedSizes };
+//       }
+//     }
+
+//     // Fetch products based on filter conditions and populate the category field
+//     const products = await productModel.find(filterConditions);
+//     console.log("Filter conditions:", filterConditions);
+
+//     // Respond if no products are found
+//     if (products.length === 0) {
+//       return res.status(404).json({ message: "No products found matching the criteria." });
+//     }
+
+//     return res.status(200).json({ products });
+//   } catch (error) {
+//     console.error("Error filtering products:", error);
+//     return res.status(500).json({ message: "Internal server error occurred while filtering products." });
+//   }
+// };
+
 
 export const filterProducts = async (req, res) => {
   try {
-    const {
-      size,
-      color,
-      minPrice,
-      maxPrice,
-      sortBy = "price",
-      order = "asc",
-    } = req.query;
+    const { color = [], categoryId = "", price = [], size = [] } = req.body;
+    console.log(req.body);
 
     const filterConditions = {};
 
-    if (size) filterConditions.size = size;
-    if (color) filterConditions.color = color;
-
-    if (minPrice || maxPrice) {
-      filterConditions.price = {};
-      if (minPrice) filterConditions.price.$gte = parseFloat(minPrice);
-      if (maxPrice) filterConditions.price.$lte = parseFloat(maxPrice);
-    }
-    console.log(filterConditions);
-
-    const sortOrder = order === "desc" ? -1 : 1;
-
-    const filteredProducts = await productModel
-      .find(filterConditions)
-      .sort({ [sortBy]: sortOrder });
-
-    // Handle no products found
-    if (filteredProducts.length === 0) {
-      return res.status(404).json({ message: "No products found" });
+    // Apply color filter
+    if (color.length > 0) {
+      const trimmedColors = color.filter(Boolean).map((item) => item.trim());
+      if (trimmedColors.length > 0) {
+        filterConditions.color = { $in: trimmedColors };
+      }
     }
 
-    return res.status(200).json({ products: filteredProducts });
+    // Apply category filter
+    if (categoryId) {
+      filterConditions.category_id = categoryId.trim();
+    }
+    
+    // Apply price filter (assumes price format is 'min - max')
+    if (price.length > 0) {
+      const [minPrice, maxPrice] = price[0].split(' - ').map((item) => parseInt(item, 10));
+      if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+        filterConditions.price = { $gte: minPrice, $lte: maxPrice };
+      }
+    }
+
+    // Apply size filter (check within variants array)
+    if (size.length > 0) {
+      const trimmedSizes = size.filter(Boolean).map((item) => item.trim());
+      if (trimmedSizes.length > 0) {
+        filterConditions['variants.size'] = { $in: trimmedSizes }; // Filter within the variants array
+      }
+    }
+
+    // Fetch products based on filter conditions and populate the category field
+    const products = await productModel.find(filterConditions);
+    console.log("Filter conditions:", filterConditions);
+
+    // Respond if no products are found
+    if (products.length === 0) {
+      return res.status(200).json({ message: "No products found matching the criteria." });
+    }
+
+    return res.status(200).json({ products });
   } catch (error) {
     console.error("Error filtering products:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Internal server error occurred while filtering products." });
   }
 };
 
-const filterByCategory = (query, category) => {
-  if (category) {
-    query.category = category;
+// Controller function for filtering products by price
+export const productByPrice = async (req, res) => {
+  try {
+    const { price } = req.body;
+    if (price && price.length > 0) {
+      const [minPrice, maxPrice] = price.split(' - ').map((item) => parseInt(item, 10));
+      if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+        const priceFilter = { price: { $gte: minPrice, $lte: maxPrice } };
+        
+        // Fetch products within the price range
+        const products = await productModel.find(priceFilter);
+
+        // Respond if no products are found
+        if (products.length === 0) {
+          return res.status(404).json({ message: "No products found in the specified price range." });
+        }
+
+        return res.status(200).json({ products });
+      }
+    }
+    return res.status(400).json({ message: "Invalid price range format." });
+  } catch (error) {
+    console.error("Error filtering products by price:", error);
+    return res.status(500).json({ message: "Internal server error occurred while filtering products by price." });
   }
 };
 
-const filterByGender = (query, gender) => {
-  if (gender) {
-    query.gender = gender;
-  }
-};
 
-const filterByPrice = (query, minPrice, maxPrice) => {
-  if (minPrice || maxPrice) {
-    query.price = {};
-    if (minPrice) query.price.$gte = Number(minPrice);
-    if (maxPrice) query.price.$lte = Number(maxPrice);
-  }
-};
+
 
 export const productByCategory = async (req, res) => {
   try {
@@ -537,7 +619,7 @@ export const productByCategory = async (req, res) => {
     // Apply category filter by finding the category by name
     if (category) {
       const categoryData = await categoryModel.findOne({ name: category });
-      console.log(categoryData);
+      // console.log(categoryData);
       if (categoryData) {
         query.category_id = categoryData._id; // Use the ObjectId of the found category
       } else {
@@ -548,23 +630,13 @@ export const productByCategory = async (req, res) => {
         });
       }
     }
-
-    // Apply other filters
-    // if (gender) query.gender = gender;
-    // if (minPrice || maxPrice) {
-    //   query.final_price = {};
-    //   if (minPrice) query.final_price.$gte = minPrice;
-    //   if (maxPrice) query.final_price.$lte = maxPrice;
-    // }
-
-    // Fetch products based on the combined filters and populate category
     const products = await productModel.find(query).populate("category_id");
-    console.log(products);
+    // console.log(products);
     // Return the filtered products
     return res.status(200).json({
       success: true,
       message: "Fetching product by Category",
-      data: products,
+      products,
     });
   } catch (error) {
     console.error(error);
@@ -572,6 +644,29 @@ export const productByCategory = async (req, res) => {
       success: false,
       message: "Server error. Unable to fetch products.",
     });
+  }
+};
+
+export const ProductByGender = async (req, res) => {
+  try {
+    // Get the gender from query parameters
+    const { gender } = req.query;
+    // console.log(req);
+    // Check if the gender parameter is provided and valid
+    if (!gender || !["men", "women", "kids"].includes(gender.toLowerCase())) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Invalid gender parameter" });
+    }
+
+    // Query products by gender
+    const products = await productModel.find({ gender: gender.toLowerCase() });
+    console.log(products);
+    return res.status(200).json({ status: true, products });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: false, message: "Internal Server error", error });
   }
 };
 
@@ -601,7 +696,66 @@ export const getProductById = async (req, res) => {
     console.error(error);
     return res.status(500).json({
       status: false,
-      message: "Server error. Unable to fetch product.",
+      message: "Internal Server error. Unable to fetch product.",
+    });
+  }
+};
+
+export const getProductByColor = async (req, res) => {
+  try {
+    const { color } = req.query;
+    if (!color) {
+      return res.status(400).json({ status: false, message: "Color is required" });
+    }
+
+    const products = await productModel.find({ color: color.toLowerCase() ,is_deleted:false});
+    if (products.length === 0) {
+      return res.status(404).json({ status: false, message: "No products found with the specified color" });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Products fetched successfully",
+      products,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server error. Unable to fetch products.",
+    });
+  }
+};
+
+export const getColorsForSimilarProducts = async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) {
+      return res.status(400).json({ status: false, message: "Product ID is required" });
+    }
+
+    const product = await productModel.findById(productId);
+    if (!product) {
+      return res.status(404).json({ status: false, message: "Product not found" });
+    }
+
+    const similarProducts = await productModel.find({
+      name: product.name,
+      _id: { $ne: productId },
+    }).select('color _id');
+
+    const colors = similarProducts.map(p =>({  id: p._id, colors:p.color}));
+
+    return res.status(200).json({
+      status: true,
+      message: "Colors for similar products fetched successfully",
+      colors,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server error. Unable to fetch colors for similar products.",
     });
   }
 };

@@ -14,6 +14,9 @@ const addressSchema = new mongoose.Schema({
     type: String,
     requried: true,
   },
+  landmark:{
+    type:String,
+  },
   city: {
     type: String,
     required: true,
@@ -25,6 +28,10 @@ const addressSchema = new mongoose.Schema({
   postalCode: {
     type: String,
     required: true,
+  },
+  phone:{
+    type:String,
+    required: true
   },
   country: {
     type: String,

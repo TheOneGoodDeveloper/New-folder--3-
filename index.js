@@ -2,7 +2,7 @@ import express from "express";
 import connectDatabase from "./Model/db.js";
 import AdminRoute from "./Routes/Admin_Route.js";
 import UserRoute from "./Routes/User_Route.js";
-import VendorRoute from "./Routes/Vendor_Route.js"
+import VendorRoute from "./Routes/Vendor_Route.js";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -11,7 +11,7 @@ import session from "express-session";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+const port = 3000;
 const app = express();
 app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
@@ -20,7 +20,7 @@ app.use(
     origin: "*",
   })
 );
-const port = 3000;
+
 app.use(
   session({
     secret: "your_secret_key",
@@ -39,7 +39,7 @@ app.use(
 );
 
 app.use("/admin", AdminRoute);
-app.use("/vendor",VendorRoute)
+app.use("/vendor", VendorRoute);
 app.use("/", UserRoute);
 
 connectDatabase();
