@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 
 const productSchema = new mongoose.Schema(
   {
@@ -11,14 +12,19 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true, // Product name
     },
-    gender:{
-      type:String,
-      required:true
+    gender: {
+      type: String,
+      required: true,
     },
     category_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Categories",
       required: true, // Reference to category
+    },
+    sub_category_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubCategories",
+      required: true, // Reference to subcategory
     },
     vendor_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -116,6 +122,11 @@ const productSchema = new mongoose.Schema(
       required: true, // Maximum retail price
       min: 0, // Must be non-negative
     },
+    selling_price: {
+      type: Number,
+      required: true,
+      min: 0, // Must be non-negative
+    },
     offer_percentage: {
       type: Number,
       default: 0, // Discount percentage
@@ -145,9 +156,14 @@ const productSchema = new mongoose.Schema(
       min: 0, // Must be non-negative
       max: 5, // Rating should not exceed 5
     },
-    is_deleted:{
-      type:Boolean,
-    }
+    storeType: {
+      type: String,
+      enum: ["online", "offline", "both"], // Specifies the store type
+      default: "online", // Default is online store
+    },
+    is_deleted: {
+      type: Boolean,
+    },
   },
   { timestamps: true } // Automatically manage createdAt and updatedAt
 );

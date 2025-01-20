@@ -7,6 +7,7 @@ import * as Category from "../Controller/Category_Controller.js";
 import * as Product from "../Controller/Product_Controller.js";
 import * as Vendor from "../Controller/Vendor_Controller.js";
 import * as Order from "../Controller/Order_Controller.js"
+import * as SubCategory from "../Controller/SubCategory_Controller.js";
 // import { authMiddleware } from "../Controller/Cart_Controller.js";
 const AdminRoute = express.Router();
 
@@ -61,7 +62,13 @@ AdminRoute.post(
   Admin.authMiddleware,
   Category.deleteCategory
 );
-AdminRoute.post("/getAllCategory", Category.getAllCategories);
+AdminRoute.get("/getAllCategory",Admin.authMiddleware, Category.getAllCategories);
+AdminRoute.post("/createSubCategory",Admin.authMiddleware, SubCategory.createSubCategory);
+AdminRoute.put("/updateSubCategory",Admin.authMiddleware, SubCategory.updateSubCategory);
+AdminRoute.get("/getSubCategoryById",Admin.authMiddleware, SubCategory.getSubCategoryById);
+AdminRoute.get("/getAllSubCategories",Admin.authMiddleware, SubCategory.getSubCategories);
+AdminRoute.post("/deleteSubCategory",Admin.authMiddleware, SubCategory.deleteSubCategory);
+
 AdminRoute.get("/getUserById", Admin.authMiddleware, User.getUserById);
 AdminRoute.post("/getVendorById", Admin.authMiddleware, Vendor.getVendorProfile);
 AdminRoute.get("/listVendors", Admin.authMiddleware, Vendor.getAllVendors);

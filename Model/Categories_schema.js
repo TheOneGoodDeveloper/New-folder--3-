@@ -14,6 +14,11 @@ const categorySchema = new mongoose.Schema({
   //   type: String,
   //   trim: true,
   // },
+  storeType: {
+    type: String,
+    enum: ["online", "offline", "both"], // Specifies the store type
+    default: "online", // Default is online store
+  },
   image: { 
     type: String, 
     required: true 
