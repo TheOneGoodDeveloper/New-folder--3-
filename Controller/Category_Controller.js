@@ -104,12 +104,86 @@ export const createCategory = async (req, res) => {
     });
   }
 };
+// export const updateCategory = async (req, res) => {
+//   console.log(req.body);
+//   console.log(req.file);
+
+//   if (req.user.role === "admin") {
+//     const { categoryId, name, storeType } = req.body;
+//     const newImage = req.file ? req.file.path : null;
+
+//     if (!categoryId || !name) {
+//       return res
+//         .status(400)
+//         .json({ status: false, message: "Please enter Required Fields" });
+//     }
+
+//     try {
+//       // Find the category to check for the existing image
+//       const category = await categoryModel.findById(categoryId);
+//       if (!category) {
+//         return res
+//           .status(404)
+//           .json({ success: false, message: "Category not found" });
+//       }
+
+//       // Delete the old image if a new one is uploaded
+//       if (newImage && category.image) {
+//         const oldImagePath = path.join(process.cwd(), category.image);
+//         try {
+//           if (fs.existsSync(oldImagePath)) {
+//             fs.unlinkSync(oldImagePath); // Delete the old image
+//           }
+//         } catch (unlinkError) {
+//           return res.status(500).json({
+//             success: false,
+//             message: "Error deleting old image",
+//             error: unlinkError.message,
+//           });
+//         }
+//       }
+
+//       // Update the category with the new data and image (if provided)
+//       const updateData = { name };
+//       if (newImage) {
+//         updateData.image = newImage;
+//       } else {
+//         updateData.image = category.image; // Keep the old image if no new one is uploaded
+//       }
+
+//       const updatedCategory = await categoryModel.findByIdAndUpdate(
+//         categoryId,
+//         updateData,
+//         { new: true, runValidators: true }
+//       );
+
+//       return res.status(200).json({
+//         success: true,
+//         message: "Category updated successfully",
+//         data: updatedCategory,
+//       });
+//     } catch (error) {
+//       return res
+//         .status(500)
+//         .json({
+//           success: false,
+//           message: "Internal Server Error",
+//           error: error.message,
+//         });
+//     }
+//   } else {
+//     return res
+//       .status(403)
+//       .json({ success: false, message: "Unauthorized Access" });
+//   }
+// };
+
 export const updateCategory = async (req, res) => {
   console.log(req.body);
   console.log(req.file);
 
   if (req.user.role === "admin") {
-    const { categoryId, name, storeType } = req.body;
+    const { categoryId, name, storeType, SubCategories } = req.body;
     const newImage = req.file ? req.file.path : null;
 
     if (!categoryId || !name) {
@@ -143,8 +217,8 @@ export const updateCategory = async (req, res) => {
         }
       }
 
-      // Update the category with the new data and image (if provided)
-      const updateData = { name };
+      // Update the category data (name, storeType, and image)
+      const updateData = { name, storeType };
       if (newImage) {
         updateData.image = newImage;
       } else {
@@ -157,19 +231,49 @@ export const updateCategory = async (req, res) => {
         { new: true, runValidators: true }
       );
 
+      // Now, update the subcategories if provided
+      if (SubCategories) {
+        // Parse SubCategories into an array
+        const subCategoryArray = SubCategories.split(",").map((sub) =>
+          sub.trim()
+        );
+
+        // Update existing subcategories
+        await Promise.all(
+          subCategoryArray.map(async (subCategoryName) => {
+            // Check if the subcategory exists
+            const existingSubCategory = await subCategoryModel.findOne({
+              name: subCategoryName,
+              category_id: categoryId,
+            });
+            if (existingSubCategory) {
+              // Update existing subcategory
+              await subCategoryModel.findByIdAndUpdate(
+                existingSubCategory._id,
+                { name: subCategoryName }
+              );
+            } else {
+              // If subcategory doesn't exist, create a new one
+              await subCategoryModel.create({
+                name: subCategoryName,
+                category_id: categoryId,
+              });
+            }
+          })
+        );
+      }
+
       return res.status(200).json({
         success: true,
-        message: "Category updated successfully",
+        message: "Category and Subcategories updated successfully",
         data: updatedCategory,
       });
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Internal Server Error",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message,
+      });
     }
   } else {
     return res
@@ -177,7 +281,6 @@ export const updateCategory = async (req, res) => {
       .json({ success: false, message: "Unauthorized Access" });
   }
 };
-
 export const deleteCategory = async (req, res) => {
   try {
     if (req.user.role === "admin") {
@@ -248,7 +351,6 @@ export const deleteCategory = async (req, res) => {
 //   }
 // };
 
-
 export const getAllCategories = async (req, res) => {
   try {
     const categories = await categoryModel.aggregate([
@@ -258,11 +360,11 @@ export const getAllCategories = async (req, res) => {
       // Lookup to join with the subcategories collection
       {
         $lookup: {
-          from: 'subcategories', // The name of the collection to join (should match the model name)
-          localField: '_id', // The field from the Categories collection
-          foreignField: 'category_id', // The field from the SubCategories collection
-          as: 'subcategories' // Alias for the populated field
-        }
+          from: "subcategories", // The name of the collection to join (should match the model name)
+          localField: "_id", // The field from the Categories collection
+          foreignField: "category_id", // The field from the SubCategories collection
+          as: "subcategories", // Alias for the populated field
+        },
       },
 
       // Project the desired fields (you can modify this if needed)
@@ -272,9 +374,9 @@ export const getAllCategories = async (req, res) => {
           cat_no: 1,
           storeType: 1,
           image: 1,
-          subcategories: { name: 1, _id: 1 } // Only include name and _id from subcategories
-        }
-      }
+          subcategories: { name: 1, _id: 1 }, // Only include name and _id from subcategories
+        },
+      },
     ]);
 
     return res.status(200).json({
@@ -290,4 +392,3 @@ export const getAllCategories = async (req, res) => {
     });
   }
 };
-

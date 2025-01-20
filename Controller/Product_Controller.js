@@ -291,6 +291,7 @@ export const createProduct = async (req, res) => {
       product_details,
       country_of_origin,
       seller_details,
+      product_storeType,
     } = req.body;
 
     if (
@@ -423,6 +424,7 @@ export const createProduct = async (req, res) => {
       offer_percentage: gstResult.offerPercentage, // Calculated dynamically
       color: variants.map((variant) => variant.color.toLowerCase()),
       gst_percentage,
+      product_storeType: product_storeType || "online",
       price_with_gst: gstResult.priceWithGST,
       final_price: gstResult.finalPrice,
       category_id: category,
