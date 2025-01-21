@@ -47,11 +47,11 @@ export const createCategory = async (req, res) => {
         .json({ status: false, message: "No Authorization" });
     }
 
-    const { name, storeType, SubCategories } = req.body;
+    const { name, storeType,subCategories } = req.body;
     const image = req.file ? req.file.path : null;
-
+    console.log(req.body);
     // Validate required fields
-    if (!name || !storeType || !image || !SubCategories) {
+    if (!name || !storeType || !image || !subCategories) {
       return res.status(400).json({
         status: false,
         message:
@@ -62,7 +62,6 @@ export const createCategory = async (req, res) => {
     // Check if the category already exists
     const existingCategory = await categoryModel.findOne({
       name,
-      storeType,
       is_deleted: false,
     });
 
@@ -74,12 +73,12 @@ export const createCategory = async (req, res) => {
     }
 
     // Parse SubCategories into an array
-    const subCategoryArray = SubCategories.split(",").map((sub) => sub.trim());
-
+    const subCategoryArray = subCategories.split(",").map((sub) => sub.trim());
+    console.log("huhjhjhj",subCategoryArray);
     // Save the main category
     const newCategory = new categoryModel({
       name,
-      storeType,
+      storeType: storeType || "online",
       image,
     });
     const savedCategory = await newCategory.save();
@@ -178,12 +177,116 @@ export const createCategory = async (req, res) => {
 //   }
 // };
 
+// export const updateCategory = async (req, res) => {
+//   console.log(req.body);
+//   console.log(req.file);
+
+//   if (req.user.role === "admin") {
+//     const { categoryId, name, storeType, subCategories } = req.body;
+//     const newImage = req.file ? req.file.path : null;
+
+//     if (!categoryId || !name) {
+//       return res
+//         .status(400)
+//         .json({ status: false, message: "Please enter Required Fields" });
+//     }
+
+//     try {
+//       // Find the category to check for the existing image
+//       const category = await categoryModel.findById(categoryId);
+//       if (!category) {
+//         return res
+//           .status(404)
+//           .json({ success: false, message: "Category not found" });
+//       }
+
+//       // Delete the old image if a new one is uploaded
+//       if (newImage && category.image) {
+//         const oldImagePath = path.join(process.cwd(), category.image);
+//         try {
+//           if (fs.existsSync(oldImagePath)) {
+//             fs.unlinkSync(oldImagePath); // Delete the old image
+//           }
+//         } catch (unlinkError) {
+//           return res.status(500).json({
+//             success: false,
+//             message: "Error deleting old image",
+//             error: unlinkError.message,
+//           });
+//         }
+//       }
+
+//       // Update the category data (name, storeType, and image)
+//       const updateData = { name, storeType };
+//       if (newImage) {
+//         updateData.image = newImage;
+//       } else {
+//         updateData.image = category.image; // Keep the old image if no new one is uploaded
+//       }
+
+//       const updatedCategory = await categoryModel.findByIdAndUpdate(
+//         categoryId,
+//         updateData,
+//         { new: true, runValidators: true }
+//       );
+
+//       // Now, update the subcategories if provided
+//       if (subCategories) {
+//         // Parse SubCategories into an array
+//         const subCategoryArray = subCategories.split(",").map((sub) =>
+//           sub.trim()
+//         );
+
+//         // Update existing subcategories
+//         await Promise.all(
+//           subCategoryArray.map(async (subCategoryName) => {
+//             // Check if the subcategory exists
+//             const existingSubCategory = await subCategoryModel.findOne({
+//               name: subCategoryName,
+//               category_id: categoryId,
+//             });
+//             if (existingSubCategory) {
+//               // Update existing subcategory
+//               await subCategoryModel.findByIdAndUpdate(
+//                 existingSubCategory._id,
+//                 { name: subCategoryName }
+//               );
+//             } else {
+//               // If subcategory doesn't exist, create a new one
+//               await subCategoryModel.create({
+//                 name: subCategoryName,
+//                 category_id: categoryId,
+//               });
+//             }
+//           })
+//         );
+//       }
+
+//       return res.status(200).json({
+//         success: true,
+//         message: "Category and Subcategories updated successfully",
+//         data: updatedCategory,
+//       });
+//     } catch (error) {
+//       return res.status(500).json({
+//         success: false,
+//         message: "Internal Server Error",
+//         error: error.message,
+//       });
+//     }
+//   } else {
+//     return res
+//       .status(403)
+//       .json({ success: false, message: "Unauthorized Access" });
+//   }
+// };
+
 export const updateCategory = async (req, res) => {
   console.log(req.body);
   console.log(req.file);
 
   if (req.user.role === "admin") {
-    const { categoryId, name, storeType, SubCategories } = req.body;
+    const { categoryId, name, storeType, subCategories } = req.body;
     const newImage = req.file ? req.file.path : null;
 
     if (!categoryId || !name) {
@@ -232,33 +335,42 @@ export const updateCategory = async (req, res) => {
       );
 
       // Now, update the subcategories if provided
-      if (SubCategories) {
+      if (subCategories) {
         // Parse SubCategories into an array
-        const subCategoryArray = SubCategories.split(",").map((sub) =>
-          sub.trim()
+        const subCategoryArray = subCategories.split(",").map((sub) => sub.trim());
+
+        // Fetch all existing subcategories for the category
+        const existingSubCategories = await subCategoryModel.find({
+          category_id: categoryId,
+        });
+
+        // Prepare lists for existing and new subcategories
+        const existingNames = existingSubCategories.map((sub) => sub.name);
+        const newNames = subCategoryArray.filter((name) => !existingNames.includes(name));
+        const toRemoveNames = existingNames.filter((name) => !subCategoryArray.includes(name));
+
+        // Update or delete existing subcategories
+        await Promise.all(
+          existingSubCategories.map(async (existingSubCategory) => {
+            if (subCategoryArray.includes(existingSubCategory.name)) {
+              // If the subcategory is in the new list, update it
+              await subCategoryModel.findByIdAndUpdate(existingSubCategory._id, {
+                name: existingSubCategory.name,
+              });
+            } else if (toRemoveNames.includes(existingSubCategory.name)) {
+              // If the subcategory is not in the new list, remove it
+              await subCategoryModel.findByIdAndDelete(existingSubCategory._id);
+            }
+          })
         );
 
-        // Update existing subcategories
+        // Add new subcategories
         await Promise.all(
-          subCategoryArray.map(async (subCategoryName) => {
-            // Check if the subcategory exists
-            const existingSubCategory = await subCategoryModel.findOne({
-              name: subCategoryName,
+          newNames.map(async (newSubCategoryName) => {
+            await subCategoryModel.create({
+              name: newSubCategoryName,
               category_id: categoryId,
             });
-            if (existingSubCategory) {
-              // Update existing subcategory
-              await subCategoryModel.findByIdAndUpdate(
-                existingSubCategory._id,
-                { name: subCategoryName }
-              );
-            } else {
-              // If subcategory doesn't exist, create a new one
-              await subCategoryModel.create({
-                name: subCategoryName,
-                category_id: categoryId,
-              });
-            }
           })
         );
       }
@@ -281,6 +393,7 @@ export const updateCategory = async (req, res) => {
       .json({ success: false, message: "Unauthorized Access" });
   }
 };
+
 export const deleteCategory = async (req, res) => {
   try {
     if (req.user.role === "admin") {
@@ -392,3 +505,36 @@ export const getAllCategories = async (req, res) => {
     });
   }
 };
+export const getCategoryById = async (req, res) => {  
+
+
+    const { id } = req.body;
+    const categories = await categoryModel.aggregate([
+      // Match categories that are not deleted
+      { $match: { is_deleted: false } },
+
+      // Lookup to join with the subcategories collection
+      {
+        $lookup: {
+          from: "subcategories", // The name of the collection to join (should match the model name)
+          localField: "_id", // The field from the Categories collection
+          foreignField: "category_id", // The field from the SubCategories collection
+          as: "subcategories", // Alias for the populated field
+        },
+      },
+
+      // Project the desired fields (you can modify this if needed)
+      {
+        $project: {
+          name: 1,
+          cat_no: 1,
+          storeType: 1,
+          image: 1,
+          subcategories: { name: 1, _id: 1 }, // Only include name and _id from subcategories
+        },
+      },
+    ]);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+}

@@ -261,3 +261,95 @@ export const updateUser = async (req, res) => {
     });
   }
 };
+
+const generateOTP = () => {
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  return otp.toString();
+};
+
+// Send OTP via mock (no actual SMS sending in this dummy example)
+const sendOTP = (phone_number, otp) => {
+  console.log(`OTP sent to ${phone_number}: ${otp}`);
+};
+
+// Mobile login with OTP functionality
+export const mobileLogin = async (req, res) => {
+  try {
+    const { phone_number } = req.body;
+    console.log(req.body);  
+    if (!phone_number) {
+      return res.status(400).json({ status: false, message: "Phone number is required" });
+    }
+
+    // Find user by phone number
+    const user = await userModel.findOne({ phone_number });
+
+    if (!user) {
+      return res.status(404).json({ status: false, message: "User not found" });
+    }
+
+    // Generate OTP and send it to the user's phone number (mocked)
+    const otp = generateOTP();
+    sendOTP(phone_number, otp);
+
+    // Store the OTP temporarily (use session or cache for actual production)
+    user.otp = otp;
+    await user.save();
+
+    return res.status(200).json({
+      status: true,
+      message: "OTP sent successfully. Please check your phone."
+    });
+  } catch (error) {
+    return res.status(500).json({ status: false, message: "Internal server error", error });
+  }
+};
+
+// Verify OTP and login the user
+export const verifyOTPAndLogin = async (req, res) => {
+  try {
+    const { phone_number, otp } = req.body;
+    
+    if (!phone_number || !otp) {
+      return res.status(400).json({ status: false, message: "Phone number and OTP are required" });
+    }
+
+    // Find user by phone number
+    const user = await userModel.findOne({ phone_number });
+
+    if (!user) {
+      return res.status(404).json({ status: false, message: "User not found" });
+    }
+
+    // Check if OTP matches
+    if (user.otp !== otp) {
+      return res.status(400).json({ status: false, message: "Invalid OTP" });
+    }
+
+    // Clear OTP after successful validation (In production, use OTP expiration time)
+    user.otp = null;
+    await user.save();
+
+    // Generate a JWT token after successful OTP validation
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited",
+      { expiresIn: "1h" }
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone_number: user.phone_number,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ status: false, message: "Internal server error", error });
+  }
+};

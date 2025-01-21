@@ -9,6 +9,8 @@ import * as Order from "../Controller/Order_Controller.js";
 const UserRoute = express.Router();
 
 UserRoute.post("/login", User.userLogin);
+UserRoute.post("/moblieLogin", User.mobileLogin);
+UserRoute.post("/verifyOtp", User.verifyOTPAndLogin);
 UserRoute.post("/register", User.registerUser);
 // UserRoute.get("/getUserById",User.authMiddleware,User.getUserById);
 UserRoute.put("/updateUser",User.authMiddleware,User.updateUser)
