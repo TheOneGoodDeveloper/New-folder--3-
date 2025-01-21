@@ -1,8 +1,8 @@
 import express from "express";
 import * as Vendor from "../Controller/Vendor_Controller.js";
 import * as Product from "../Controller/Product_Controller.js";
-import * as Category from "../Controller/Category_Controller.js"
-import * as subCategory from "../Controller/SubCategory_Controller.js"
+import * as Category from "../Controller/Category_Controller.js";
+import * as subCategory from "../Controller/SubCategory_Controller.js";
 
 const VendorRoute = express.Router();
 
@@ -25,12 +25,19 @@ VendorRoute.post(
   Vendor.authMiddleware,
   Product.deleteProduct
 );
-VendorRoute.get("/productList", Vendor.authMiddleware,Vendor.getAllProducts);
+VendorRoute.get("/productList", Vendor.authMiddleware, Vendor.getAllProducts);
 VendorRoute.post("/getAllCategory", Category.getAllCategories);
 VendorRoute.get("/subCategorybyCategory", subCategory.getSubCategoryByCategory);
-VendorRoute.get("/getProductById",Vendor.authMiddleware,Product.getProductById)
-VendorRoute.get("/vendor_dashboard",Vendor.authMiddleware,Vendor.vendor_dashboard)
+VendorRoute.get(
+  "/getProductById",
+  Vendor.authMiddleware,
+  Product.getProductById
+);
+VendorRoute.get(
+  "/vendor_dashboard",
+  Vendor.authMiddleware,
+  Vendor.vendor_dashboard
+);
 // VendorRoute.get("/productSaleByVendor",Vendor.authMiddleware,Vendor.productSaleByVendor)
-
 
 export default VendorRoute;
