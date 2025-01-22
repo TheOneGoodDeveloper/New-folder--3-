@@ -94,13 +94,47 @@ export const deleteSubCategory = async (req, res) => {
 };
 
 
+// export const getSubCategoryByCategory = async (req, res) => {  
+//     const { categoryId } = req.body;
+//     console.log(categoryId);
+//     try {
+//       const subCategories = await subCategoryModel
+//       .find({ category_id: categoryId }) // Use the correct field name from your schema
+//       .populate("category_id", "name");
+
+//        return res.status(200).json({status:false,subCategories});
+//     } catch (error) {
+//        return res.status(500).json({ message: "Error retrieving SubCategories", error });
+//     }
+//  }
+
+
 export const getSubCategoryByCategory = async (req, res) => {  
-    const { categoryId } = req.body;
-    
-    try {
-        const subCategories = await subCategoryModel.find({ categoryId }).populate("category_id", "name");
-        res.status(200).json(subCategories);
-    } catch (error) {
-        res.status(500).json({ message: "Error retrieving SubCategories", error });
-    }
- }
+  const { categoryId } = req.body;
+  console.log(categoryId);
+  try {
+      const subCategories = await subCategoryModel
+          .find({ category_id:categoryId  }) // Match category_id with the given categoryId
+          .populate("category_id", "name _id"); // Populate the category name from Categories collection
+
+      if (!subCategories || subCategories.length === 0) {
+          return res.status(404).json({
+              status: false,
+              message: "No SubCategories found for the given category",
+          });
+      }
+
+      return res.status(200).json({
+          status: true,
+          message: "SubCategories retrieved successfully",
+          subCategories,
+      });
+  } catch (error) {
+      return res.status(500).json({
+          status: false,
+          message: "Error retrieving SubCategories",
+          error: error.message,
+      });
+  }
+};
+

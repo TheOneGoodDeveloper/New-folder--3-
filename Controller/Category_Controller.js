@@ -281,9 +281,246 @@ export const createCategory = async (req, res) => {
 //   }
 // };
 
+// export const updateCategory = async (req, res) => {
+//   console.log(req.body);
+//   console.log(req.file);
+//   console.log(req.files);
+
+//   if (req.user.role === "admin") {
+//     const { categoryId, name, storeType, subCategories } = req.body;
+//     const newImage = req.file ? req.file.path : null;
+
+//     if (!categoryId || !name) {
+//       return res
+//         .status(400)
+//         .json({ status: false, message: "Please enter Required Fields" });
+//     }
+//     console.log(req.file);
+//     console.log(req.body);
+//     try {
+//       // Find the category to check for the existing image
+//       const category = await categoryModel.findById(categoryId);
+//       if (!category) {
+//         return res
+//           .status(404)
+//           .json({ success: false, message: "Category not found" });
+//       }
+
+//       // Delete the old image if a new one is uploaded
+//       if (newImage && category.image) {
+//         const oldImagePath = path.join(process.cwd(), category.image);
+//         try {
+//           if (fs.existsSync(oldImagePath)) {
+//             fs.unlinkSync(oldImagePath); // Delete the old image
+//           }
+//         } catch (unlinkError) {
+//           return res.status(500).json({
+//             success: false,
+//             message: "Error deleting old image",
+//             error: unlinkError.message,
+//           });
+//         }
+//       }
+
+//       // Update the category data (name, storeType, and image)
+//       const updateData = { name, storeType };
+//       if (newImage) {
+//         updateData.image = newImage;
+//       } else {
+//         updateData.image = category.image; // Keep the old image if no new one is uploaded
+//       }
+
+//       const updatedCategory = await categoryModel.findByIdAndUpdate(
+//         categoryId,
+//         updateData,
+//         { new: true, runValidators: true }
+//       );
+
+//       // Now, update the subcategories if provided
+//       if (subCategories) {
+//         // Parse SubCategories into an array
+//         const subCategoryArray = subCategories.split(",").map((sub) => sub.trim());
+
+//         // Fetch all existing subcategories for the category
+//         const existingSubCategories = await subCategoryModel.find({
+//           category_id: categoryId,
+//         });
+
+//         // Prepare lists for existing and new subcategories
+//         const existingNames = existingSubCategories.map((sub) => sub.name);
+//         const newNames = subCategoryArray.filter((name) => !existingNames.includes(name));
+//         const toRemoveNames = existingNames.filter((name) => !subCategoryArray.includes(name));
+
+//         // Update or delete existing subcategories
+//         await Promise.all(
+//           existingSubCategories.map(async (existingSubCategory) => {
+//             if (subCategoryArray.includes(existingSubCategory.name)) {
+//               // If the subcategory is in the new list, update it
+//               await subCategoryModel.findByIdAndUpdate(existingSubCategory._id, {
+//                 name: existingSubCategory.name,
+//               });
+//             } else if (toRemoveNames.includes(existingSubCategory.name)) {
+//               // If the subcategory is not in the new list, remove it
+//               await subCategoryModel.findByIdAndDelete(existingSubCategory._id);
+//             }
+//           })
+//         );
+
+//         // Add new subcategories
+//         await Promise.all(
+//           newNames.map(async (newSubCategoryName) => {
+//             await subCategoryModel.create({
+//               name: newSubCategoryName,
+//               category_id: categoryId,
+//             });
+//           })
+//         );
+//       }
+
+//       return res.status(200).json({
+//         success: true,
+//         message: "Category and Subcategories updated successfully",
+//         data: updatedCategory,
+//       });
+//     } catch (error) {
+//       return res.status(500).json({
+//         success: false,
+//         message: "Internal Server Error",
+//         error: error.message,
+//       });
+//     }
+//   } else {
+//     return res
+//       .status(403)
+//       .json({ success: false, message: "Unauthorized Access" });
+//   }
+// };
+
+
+
+
+// export const updateCategory = async (req, res) => {
+//   console.log(req.body);
+//   console.log(req.file);
+
+//   if (req.user.role === "admin") {
+//     const { categoryId, name, storeType, subCategories } = req.body;
+//     const newImage = req.file ? req.file.path : null;
+
+//     if (!categoryId || !name) {
+//       return res
+//         .status(400)
+//         .json({ status: false, message: "Please enter required fields" });
+//     }
+
+//     try {
+//       // Find the category to check for the existing image
+//       const category = await categoryModel.findById(categoryId);
+//       if (!category) {
+//         return res
+//           .status(404)
+//           .json({ success: false, message: "Category not found" });
+//       }
+
+//       // Delete the old image if a new one is uploaded
+//       if (newImage && category.image) {
+//         const oldImagePath = path.join(process.cwd(), category.image);
+//         try {
+//           if (fs.existsSync(oldImagePath)) {
+//             fs.unlinkSync(oldImagePath); // Delete the old image
+//           }
+//         } catch (unlinkError) {
+//           return res.status(500).json({
+//             success: false,
+//             message: "Error deleting old image",
+//             error: unlinkError.message,
+//           });
+//         }
+//       }
+
+//       // Update the category data (name, storeType, and image)
+//       const updateData = { name, storeType };
+//       if (newImage) {
+//         updateData.image = newImage;
+//       } else {
+//         updateData.image = category.image; // Keep the old image if no new one is uploaded
+//       }
+
+//       const updatedCategory = await categoryModel.findByIdAndUpdate(
+//         categoryId,
+//         updateData,
+//         { new: true, runValidators: true }
+//       );
+
+//       // Now, update the subcategories if provided
+//       if (subCategories) {
+//         // Parse subCategories as a JSON array
+//         const subCategoryArray = JSON.parse(subCategories);
+
+//         // Fetch all existing subcategories for the category
+//         const existingSubCategories = await subCategoryModel.find({
+//           category_id: categoryId,
+//         });
+
+//         // Prepare lists for existing and new subcategories
+//         const existingIds = existingSubCategories.map((sub) => sub._id.toString());
+//         const updatedIds = subCategoryArray
+//           .filter((sub) => sub._id)
+//           .map((sub) => sub._id);
+
+//         // Find subcategories to be removed
+//         const toRemoveIds = existingIds.filter((id) => !updatedIds.includes(id));
+
+//         // Remove subcategories that are no longer in the updated list
+//         await Promise.all(
+//           toRemoveIds.map(async (id) => {
+//             await subCategoryModel.findByIdAndDelete(id);
+//           })
+//         );
+
+//         // Update existing subcategories and add new ones
+//         await Promise.all(
+//           subCategoryArray.map(async (subCategory) => {
+//             if (subCategory._id) {
+//               // Update existing subcategory
+//               await subCategoryModel.findByIdAndUpdate(
+//                 subCategory._id,
+//                 { name: subCategory.name },
+//                 { new: true, runValidators: true }
+//               );
+//             } else {
+//               // Add new subcategory
+//               await subCategoryModel.create({
+//                 name: subCategory.name,
+//                 category_id: categoryId,
+//               });
+//             }
+//           })
+//         );
+//       }
+
+//       return res.status(200).json({
+//         success: true,
+//         message: "Category and Subcategories updated successfully",
+//         data: updatedCategory,
+//       });
+//     } catch (error) {
+//       return res.status(500).json({
+//         success: false,
+//         message: "Internal Server Error",
+//         error: error.message,
+//       });
+//     }
+//   } else {
+//     return res
+//       .status(403)
+//       .json({ success: false, message: "Unauthorized Access" });
+//   }
+// };
+
 export const updateCategory = async (req, res) => {
   console.log(req.body);
-  console.log(req.files);
+  console.log(req.file);
 
   if (req.user.role === "admin") {
     const { categoryId, name, storeType, subCategories } = req.body;
@@ -292,10 +529,9 @@ export const updateCategory = async (req, res) => {
     if (!categoryId || !name) {
       return res
         .status(400)
-        .json({ status: false, message: "Please enter Required Fields" });
+        .json({ status: false, message: "Please enter required fields" });
     }
-    console.log(req.file);
-    console.log(req.body);
+
     try {
       // Find the category to check for the existing image
       const category = await categoryModel.findById(categoryId);
@@ -337,8 +573,8 @@ export const updateCategory = async (req, res) => {
 
       // Now, update the subcategories if provided
       if (subCategories) {
-        // Parse SubCategories into an array
-        const subCategoryArray = subCategories.split(",").map((sub) => sub.trim());
+        // Parse subCategories as a JSON array
+        const subCategoryArray = JSON.parse(subCategories);
 
         // Fetch all existing subcategories for the category
         const existingSubCategories = await subCategoryModel.find({
@@ -346,32 +582,38 @@ export const updateCategory = async (req, res) => {
         });
 
         // Prepare lists for existing and new subcategories
-        const existingNames = existingSubCategories.map((sub) => sub.name);
-        const newNames = subCategoryArray.filter((name) => !existingNames.includes(name));
-        const toRemoveNames = existingNames.filter((name) => !subCategoryArray.includes(name));
+        const existingIds = existingSubCategories.map((sub) => sub._id.toString());
+        const updatedIds = subCategoryArray
+          .filter((sub) => sub._id)
+          .map((sub) => sub._id);
 
-        // Update or delete existing subcategories
+        // Find subcategories to be removed
+        const toRemoveIds = existingIds.filter((id) => !updatedIds.includes(id));
+
+        // Remove subcategories that are no longer in the updated list
         await Promise.all(
-          existingSubCategories.map(async (existingSubCategory) => {
-            if (subCategoryArray.includes(existingSubCategory.name)) {
-              // If the subcategory is in the new list, update it
-              await subCategoryModel.findByIdAndUpdate(existingSubCategory._id, {
-                name: existingSubCategory.name,
-              });
-            } else if (toRemoveNames.includes(existingSubCategory.name)) {
-              // If the subcategory is not in the new list, remove it
-              await subCategoryModel.findByIdAndDelete(existingSubCategory._id);
-            }
+          toRemoveIds.map(async (id) => {
+            await subCategoryModel.findByIdAndDelete(id);
           })
         );
 
-        // Add new subcategories
+        // Update existing subcategories and add new ones
         await Promise.all(
-          newNames.map(async (newSubCategoryName) => {
-            await subCategoryModel.create({
-              name: newSubCategoryName,
-              category_id: categoryId,
-            });
+          subCategoryArray.map(async (subCategory) => {
+            if (subCategory._id) {
+              // Update existing subcategory
+              await subCategoryModel.findByIdAndUpdate(
+                subCategory._id,
+                { name: subCategory.name },
+                { new: true, runValidators: true }
+              );
+            } else {
+              // Add new subcategory
+              await subCategoryModel.create({
+                name: subCategory.name,
+                category_id: categoryId,
+              });
+            }
           })
         );
       }

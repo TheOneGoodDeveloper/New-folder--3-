@@ -1147,7 +1147,18 @@ export const getColorsForSimilarProducts = async (req, res) => {
     });
   }
 
-  
+
 };
+
+
+export const getRecentProducts = async (req, res) => {  
+  try {
+    const products = await productModel.find().sort({ createdAt: -1 }).limit(10);
+    res.status(200).json({ products, message: "Recent products fetched successfully" });
+  } catch (error) {
+    console.error("Error fetching recent products:", error);
+    res.status(500).json({ message: "Error fetching recent products", error: error.message });
+  }
+}
 
 

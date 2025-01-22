@@ -65,7 +65,7 @@ const productSchema = new mongoose.Schema(
       {
         detail_id: {
           type: String,
-          required: true, // Unique identifier for each detail set
+          required:false, // Unique identifier for each detail set
         },
         sleeve_details: {
           type: String,

@@ -53,7 +53,7 @@ AdminRoute.post(
 );
 AdminRoute.post(
   "/updateCategory",
-  upload.single("images"),
+  upload.single("newImage"),
   Admin.authMiddleware,
   Category.updateCategory
 );
@@ -68,7 +68,7 @@ AdminRoute.put("/updateSubCategory",Admin.authMiddleware, SubCategory.updateSubC
 AdminRoute.get("/getSubCategoryById",Admin.authMiddleware, SubCategory.getSubCategoryById);
 AdminRoute.get("/getAllSubCategories",Admin.authMiddleware, SubCategory.getSubCategories);
 AdminRoute.post("/deleteSubCategory",Admin.authMiddleware, SubCategory.deleteSubCategory);
-
+AdminRoute.get("/getSubCategoryByCategory",Admin.authMiddleware, SubCategory.getSubCategoryByCategory); 
 AdminRoute.get("/getUserById", Admin.authMiddleware, User.getUserById);
 AdminRoute.post("/getVendorById", Admin.authMiddleware, Vendor.getVendorProfile);
 AdminRoute.get("/listVendors", Admin.authMiddleware, Vendor.getAllVendors);

@@ -36,7 +36,7 @@ UserRoute.post("/productByPrice",Product.productByPrice)
 UserRoute.get("/productByGender",Product.ProductByGender);
 UserRoute.get("/getProductById", Product.getProductById);
 UserRoute.post("/similarProductsByColor", Product.getColorsForSimilarProducts);
-
+UserRoute.post("/getrecentProducts", Product.getRecentProducts);
 UserRoute.post("/createOrder",User.authMiddleware,Order.createOrder);
 UserRoute.get("/order/:id", User.authMiddleware, Order.getOrderById);
 UserRoute.get("/orders", User.authMiddleware, Order.getAllOrders);
