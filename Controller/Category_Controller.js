@@ -283,7 +283,7 @@ export const createCategory = async (req, res) => {
 
 export const updateCategory = async (req, res) => {
   console.log(req.body);
-  console.log(req.file);
+  console.log(req.files);
 
   if (req.user.role === "admin") {
     const { categoryId, name, storeType, subCategories } = req.body;
@@ -294,7 +294,8 @@ export const updateCategory = async (req, res) => {
         .status(400)
         .json({ status: false, message: "Please enter Required Fields" });
     }
-
+    console.log(req.file);
+    console.log(req.body);
     try {
       // Find the category to check for the existing image
       const category = await categoryModel.findById(categoryId);

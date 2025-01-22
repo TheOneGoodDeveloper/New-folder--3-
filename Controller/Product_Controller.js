@@ -1147,3 +1147,5 @@ export const getColorsForSimilarProducts = async (req, res) => {
     });
   }
 };
+
+
