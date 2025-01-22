@@ -1146,6 +1146,8 @@ export const getColorsForSimilarProducts = async (req, res) => {
         "Internal Server error. Unable to fetch colors for similar products.",
     });
   }
+
+  
 };
 
 
