@@ -80,7 +80,7 @@ export const adminLogin = async (req, res) => {
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited",
       {
-        expiresIn: "5h", // Token expiration time
+        expiresIn: "24h", // Token expiration time
       }
     );
     // console.log(token);

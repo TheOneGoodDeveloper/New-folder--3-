@@ -23,7 +23,7 @@ const productSchema = new mongoose.Schema(
     },
     sub_category_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "SubCategories",
+      ref: "subcategories",
       required: true, // Reference to subcategory
     },
     vendor_id: {
@@ -130,9 +130,7 @@ const productSchema = new mongoose.Schema(
     offer_percentage: {
       type: Number,
       default: 0, // Discount percentage
-      min: 0, // Must be non-negative
-      max: 100, // Offer percentage should not exceed 100
-    },
+        },
     final_price: {
       type: Number,
       required: true, // Final price after applying the offer
@@ -163,6 +161,7 @@ const productSchema = new mongoose.Schema(
     },
     is_deleted: {
       type: Boolean,
+      default: false, // Track if the product is deleted
     },
   },
   { timestamps: true } // Automatically manage createdAt and updatedAt

@@ -707,6 +707,51 @@ export const deleteCategory = async (req, res) => {
 //   }
 // };
 
+// export const getAllCategories = async (req, res) => {
+//   try {
+//     const categories = await categoryModel.aggregate([
+//       // Match categories that are not deleted
+//       { $match: { is_deleted: false } },
+
+//       // Lookup to join with the subcategories collection
+//       {
+//         $lookup: {
+//           from: "subcategories", // The name of the collection to join (should match the model name)
+//           localField: "_id", // The field from the Categories collection
+//           foreignField: "category_id", // The field from the SubCategories collection
+//           as: "subcategories", // Alias for the populated field
+//         },
+//       },
+
+//       // Project the desired fields (you can modify this if needed)
+//       {
+//         $project: {
+//           name: 1,
+//           cat_no: 1,
+//           storeType: 1,
+//           image: 1,
+//           subcategories: { name: 1, _id: 1 }, // Only include name and _id from subcategories
+//         },
+//       },
+//     ]);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Categories fetched successfully",
+//       data: categories,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching categories:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal Server Error",
+//     });
+//   }
+// };
+
+
+
+
 export const getAllCategories = async (req, res) => {
   try {
     const categories = await categoryModel.aggregate([
@@ -716,21 +761,56 @@ export const getAllCategories = async (req, res) => {
       // Lookup to join with the subcategories collection
       {
         $lookup: {
-          from: "subcategories", // The name of the collection to join (should match the model name)
+          from: "subcategories", // The name of the subcategories collection
           localField: "_id", // The field from the Categories collection
           foreignField: "category_id", // The field from the SubCategories collection
           as: "subcategories", // Alias for the populated field
         },
       },
 
-      // Project the desired fields (you can modify this if needed)
+      // Lookup to join the subcategories with the products collection to calculate product count
+      {
+        $lookup: {
+          from: "products", // The name of the products collection
+          localField: "subcategories._id", // The field from the SubCategories collection
+          foreignField: "sub_category_id", // The field from the Products collection
+          as: "subcategory_products", // Alias for the joined products
+        },
+      },
+
+      // Add product count to each subcategory
+      {
+        $addFields: {
+          subcategories: {
+            $map: {
+              input: "$subcategories",
+              as: "subcategory",
+              in: {
+                _id: "$$subcategory._id",
+                name: "$$subcategory.name",
+                product_count: {
+                  $size: {
+                    $filter: {
+                      input: "$subcategory_products",
+                      as: "product",
+                      cond: { $eq: ["$$product.sub_category_id", "$$subcategory._id"] },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+
+      // Project the desired fields
       {
         $project: {
           name: 1,
           cat_no: 1,
           storeType: 1,
           image: 1,
-          subcategories: { name: 1, _id: 1 }, // Only include name and _id from subcategories
+          subcategories: 1, // Include the modified subcategories with product count
         },
       },
     ]);
@@ -748,6 +828,8 @@ export const getAllCategories = async (req, res) => {
     });
   }
 };
+
+
 export const getCategoryById = async (req, res) => {  
 
 
@@ -781,3 +863,5 @@ export const getCategoryById = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 }
+
+

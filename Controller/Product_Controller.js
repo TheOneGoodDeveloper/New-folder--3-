@@ -284,9 +284,10 @@ export const createProduct = async (req, res) => {
       MRP,
       selling_price,
       gender,
+      color,
       gst_percentage,
       category,
-      sub_category,
+      subCategory,
       variants,
       product_details,
       country_of_origin,
@@ -367,8 +368,8 @@ export const createProduct = async (req, res) => {
       }
 
       // Calculate offer percentage from MRP and selling price
-      const offerPercentageValue =
-        ((MRPValue - sellingPriceValue) / MRPValue) * 100;
+      // const offerPercentageValue =
+      //   ((MRPValue - sellingPriceValue) / MRPValue) * 100;
 
       // Convert GST percentage to decimal
       const gstDecimal = gstPercentageValue / 100;
@@ -389,7 +390,7 @@ export const createProduct = async (req, res) => {
         gstAmount: gstAmount.toFixed(2), // GST amount rounded to 2 decimal places
         priceWithGST: priceWithGST.toFixed(2), // Price including GST
         finalPrice: finalPrice.toFixed(2), // Final price after adding commission
-        offerPercentage: offerPercentageValue.toFixed(2), // Offer percentage
+        // offerPercentage: offerPercentageValue.toFixed(2), // Offer percentage
       };
     };
 
@@ -422,13 +423,14 @@ export const createProduct = async (req, res) => {
       MRP, // Retain MRP as is
       selling_price, // Include selling price
       offer_percentage: gstResult.offerPercentage, // Calculated dynamically
-      color: variants.map((variant) => variant.color.toLowerCase()),
+      // color: variants.map((variant) => variant.color?.toLowerCase()),
+      color: color,
       gst_percentage,
       product_storeType: product_storeType || "online",
       price_with_gst: gstResult.priceWithGST,
       final_price: gstResult.finalPrice,
       category_id: category,
-      sub_category_id: sub_category,
+      sub_category_id: subCategory,
       vendor_id: req.user.id,
       total_stock: totalStock,
       variants: UniqueVariants,
@@ -457,6 +459,189 @@ export const createProduct = async (req, res) => {
       .json({ error: "Server error occurred while creating the product" });
   }
 };
+
+// export const createProduct = async (req, res) => {
+//   try {
+//     // Authorization check
+//     if (req.user.role !== "vendor") {
+//       return res.status(401).json({ error: "Unauthorized access" });
+//     }
+
+//     // Handle file uploads
+//     await new Promise((resolve, reject) => {
+//       handleFileUploads(req, res, (err) => {
+//         if (err) reject(err);
+//         resolve();
+//       });
+//     });
+
+//     // Log the request body and uploaded files for debugging
+//     console.log("Request Body:", req.body);
+//     console.log("Uploaded Files:", req.files);
+
+//     // Extract and validate required fields from request body
+//     const {
+//       name,
+//       description,
+//       MRP,
+//       selling_price,
+//       gender,
+//       gst_percentage,
+//       category,
+//       sub_category,
+//       variants,
+//       product_details,
+//       country_of_origin,
+//       seller_details,
+//       product_storeType,
+//     } = req.body;
+
+//     if (!name || !description || !MRP || !selling_price || !category || !variants) {
+//       return res.status(400).json({ status: false, error: "Missing required fields" });
+//     }
+
+//     // Check if the product already exists based on name, gender, size, and color in variants
+//     for (let variant of variants) {
+//       const { gender, size, color } = variant;
+//       const existingProduct = await checkProductExists(gender, size, color);
+//       if (existingProduct) {
+//         return res.status(400).json({
+//           error: `Product with these specifications already exists: (${gender}, ${size}, ${color})`,
+//         });
+//       }
+//     }
+
+//     // Ensure directory for storing files exists
+//     const targetDir = path.join("Assets", "Products");
+//     if (!fs.existsSync(targetDir)) {
+//       fs.mkdirSync(targetDir, { recursive: true });
+//     }
+
+//     // Process uploaded files and prepare for saving
+//     const images = req.files.map((file) => {
+//       try {
+//         const extension = path.extname(file.originalname);
+//         const uniqueName = `product-${Date.now()}${extension}`;
+//         const newPath = path.join(targetDir, uniqueName);
+//         const sourcePath = file.path; // Path to the uploaded temporary file
+
+//         // Check if the source file exists
+//         if (!fs.existsSync(sourcePath)) {
+//           throw new Error(`Source file not found: ${sourcePath}`);
+//         }
+
+//         // Move the file to the new path
+//         fs.renameSync(sourcePath, newPath);
+//         return newPath;
+//       } catch (error) {
+//         console.error("File processing error:", error);
+//         throw new Error("Failed to process uploaded files.");
+//       }
+//     });
+
+//     // Generate a product ID
+//     const productId = await generateProductId(category, name);
+
+//     // Generate unique variants and details
+//     const UniqueVariants = variants.map((variant) => ({
+//       variant_id: generateVariantId(productId, variant.size, variant.color),
+//       ...variant,
+//     }));
+
+//     const UniqueDetails = variants.map((variant, index) => ({
+//       detail_id: generateProductDetailsId(productId, variant.size, variant.color),
+//       ...product_details[index],
+//     }));
+
+//     const processedSellerDetails = {
+//       name: seller_details[0]?.seller_name || "Unknown",
+//       location: seller_details[0]?.seller_location || "Unknown",
+//     };
+
+//     // Calculate GST, final price, and offer percentage
+//     const calculateGST = (MRP, selling_price, gst_Percentage) => {
+//       const MRPValue = parseFloat(MRP);
+//       const sellingPriceValue = parseFloat(selling_price);
+//       const gstPercentageValue = parseFloat(gst_Percentage);
+
+//       if (isNaN(MRPValue) || isNaN(sellingPriceValue) || isNaN(gstPercentageValue)) {
+//         throw new Error("MRP, selling price, and GST percentage must be valid numbers");
+//       }
+
+//       const offerPercentageValue = ((MRPValue - sellingPriceValue) / MRPValue) * 100;
+//       const gstDecimal = gstPercentageValue / 100;
+//       const gstAmount = sellingPriceValue * gstDecimal;
+//       const priceWithGST = sellingPriceValue + gstAmount;
+//       const commission = sellingPriceValue * (2 / 100);
+//       const finalPrice = priceWithGST + commission;
+
+//       return {
+//         gstAmount: gstAmount.toFixed(2),
+//         priceWithGST: priceWithGST.toFixed(2),
+//         finalPrice: finalPrice.toFixed(2),
+//         offerPercentage: offerPercentageValue.toFixed(2),
+//       };
+//     };
+
+//     const calculateTotalStock = (variants) => {
+//       if (!Array.isArray(variants)) {
+//         throw new Error("Variants should be an array");
+//       }
+//       return variants.reduce((totalStock, variant) => {
+//         const stockValue = parseInt(variant.stock, 10);
+//         if (isNaN(stockValue)) {
+//           throw new Error("Each variant should have a valid stock number");
+//         }
+//         return totalStock + stockValue;
+//       }, 0);
+//     };
+
+//     const gstResult = calculateGST(MRP, selling_price, gst_percentage);
+//     const totalStock = calculateTotalStock(UniqueVariants);
+
+//     // Prepare new product data
+//     const newProductData = {
+//       product_id: productId,
+//       name,
+//       gender,
+//       description,
+//       MRP,
+//       selling_price,
+//       offer_percentage: gstResult.offerPercentage,
+//       color: variants.map((variant) => variant.color.toLowerCase()),
+//       gst_percentage,
+//       product_storeType: product_storeType || "online",
+//       price_with_gst: gstResult.priceWithGST,
+//       final_price: gstResult.finalPrice,
+//       category_id: category,
+//       sub_category_id: sub_category,
+//       vendor_id: req.user.id,
+//       total_stock: totalStock,
+//       variants: UniqueVariants,
+//       product_details: UniqueDetails,
+//       country_of_origin,
+//       seller_details: processedSellerDetails,
+//       images,
+//     };
+
+//     // Create a new product instance and save to database
+//     const newProduct = new productModel(newProductData);
+//     await newProduct.save();
+
+//     // Indicate successful product creation
+//     res.status(201).json({
+//       data: {
+//         message: "Product created successfully",
+//         newProduct,
+//       },
+//     });
+//   } catch (error) {
+//     // Handle any errors that occur
+//     console.error("Error in product creation:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 // export const updateProduct = async (req, res) => {
 //   try {
 //     // Check user authorization
@@ -811,23 +996,23 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-export const getAllProducts = async (req, res) => {
-  try {
-    const products = await productModel
-      .find()
-      .populate("category_id")
-      .lean()
-      .exec();
-    res
-      .status(200)
-      .json({ products, message: "Products fetched successfully" });
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    res
-      .status(500)
-      .json({ message: "Error fetching products", error: error.message });
-  }
-};
+// export const getAllProducts = async (req, res) => {
+//   try {
+//     const products = await productModel
+//       .find()
+//       .populate("category_id")
+//       .lean()
+//       .exec();
+//     res
+//       .status(200)
+//       .json({ products, message: "Products fetched successfully" });
+//   } catch (error) {
+//     console.error("Error fetching products:", error);
+//     res
+//       .status(500)
+//       .json({ message: "Error fetching products", error: error.message });
+//   }
+// };
 
 // export const filterProducts = async (req, res) => {
 //   try {
@@ -881,6 +1066,42 @@ export const getAllProducts = async (req, res) => {
 //     return res.status(500).json({ message: "Internal server error occurred while filtering products." });
 //   }
 // };
+export const getAllProducts = async (req, res) => {
+  try {
+    const products = await productModel
+      .find()
+      .populate({
+        path: "category_id", // Only include categories with storeType "online"
+        select: "name storeType", // Include specific fields
+      })
+      .populate({
+        path: "sub_category_id",
+        select: "name", // Include only the subcategory name
+      }) // Exclude deleted products;
+
+    console.log("Fetched Products (Raw):", products); // Debugging log
+
+    // Filter products where both category and subcategory are valid
+    // const filteredProducts = products.filter(
+    //   (product) => product.category_id && product.sub_category_id
+    // );
+
+    // console.log("Filtered Products:", filteredProducts); // Debugging log
+
+    return res
+      .status(200)
+      .json({
+        products,
+        message: "Products fetched successfully",
+      });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return res
+      .status(500)
+      .json({ message: "Error fetching products", error: error.message });
+  }
+};
+
 
 export const filterProducts = async (req, res) => {
   try {
@@ -934,11 +1155,9 @@ export const filterProducts = async (req, res) => {
     return res.status(200).json({ products });
   } catch (error) {
     console.error("Error filtering products:", error);
-    return res
-      .status(500)
-      .json({
-        message: "Internal server error occurred while filtering products.",
-      });
+    return res.status(500).json({
+      message: "Internal server error occurred while filtering products.",
+    });
   }
 };
 
@@ -958,11 +1177,9 @@ export const productByPrice = async (req, res) => {
 
         // Respond if no products are found
         if (products.length === 0) {
-          return res
-            .status(404)
-            .json({
-              message: "No products found in the specified price range.",
-            });
+          return res.status(404).json({
+            message: "No products found in the specified price range.",
+          });
         }
 
         return res.status(200).json({ products });
@@ -971,12 +1188,10 @@ export const productByPrice = async (req, res) => {
     return res.status(400).json({ message: "Invalid price range format." });
   } catch (error) {
     console.error("Error filtering products by price:", error);
-    return res
-      .status(500)
-      .json({
-        message:
-          "Internal server error occurred while filtering products by price.",
-      });
+    return res.status(500).json({
+      message:
+        "Internal server error occurred while filtering products by price.",
+    });
   }
 };
 
@@ -1086,12 +1301,10 @@ export const getProductByColor = async (req, res) => {
       is_deleted: false,
     });
     if (products.length === 0) {
-      return res
-        .status(404)
-        .json({
-          status: false,
-          message: "No products found with the specified color",
-        });
+      return res.status(404).json({
+        status: false,
+        message: "No products found with the specified color",
+      });
     }
 
     return res.status(200).json({
@@ -1146,19 +1359,24 @@ export const getColorsForSimilarProducts = async (req, res) => {
         "Internal Server error. Unable to fetch colors for similar products.",
     });
   }
-
-
 };
 
-
-export const getRecentProducts = async (req, res) => {  
+export const getRecentProducts = async (req, res) => {
   try {
-    const products = await productModel.find().sort({ createdAt: -1 }).limit(10);
-    res.status(200).json({ products, message: "Recent products fetched successfully" });
+    const products = await productModel
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(10);
+    res
+      .status(200)
+      .json({ products, message: "Recent products fetched successfully" });
   } catch (error) {
     console.error("Error fetching recent products:", error);
-    res.status(500).json({ message: "Error fetching recent products", error: error.message });
+    res
+      .status(500)
+      .json({
+        message: "Error fetching recent products",
+        error: error.message,
+      });
   }
-}
-
-
+};

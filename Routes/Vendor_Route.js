@@ -26,7 +26,7 @@ VendorRoute.post(
   Product.deleteProduct
 );
 VendorRoute.get("/productList", Vendor.authMiddleware, Vendor.getAllProducts);
-VendorRoute.post("/getAllCategory", Category.getAllCategories);
+VendorRoute.post("/getAllCategory",Vendor.authMiddleware, Category.getAllCategories);
 VendorRoute.post("/subCategorybyCategory",Vendor.authMiddleware, subCategory.getSubCategoryByCategory);
 VendorRoute.get(
   "/getProductById",
