@@ -81,6 +81,6 @@ AdminRoute.get(
 );
 AdminRoute.get("/bulkApprove", Admin.authMiddleware, Vendor.bulkApproveVendors);
 AdminRoute.post("/approveVendor", Admin.authMiddleware, Vendor.approveVendor);
-AdminRoute.get("/allOrder",Admin.authMiddleware,Order.getAllOrders)
+AdminRoute.get("/allOrders",Admin.authMiddleware,Order.getAllOrders)
 
 export default AdminRoute;

@@ -35,7 +35,7 @@ export const authMiddleware = (req, res, next) => {
 
 // export const createCart = async (req, res) => {
 //   const { productId, quantity, size, color } = req.body;
-  
+
 //   try {
 //     // Ensure user is logged in
 //     if (!req.user?.id) {
@@ -135,18 +135,20 @@ export const createCart = async (req, res) => {
         .status(401)
         .json({ message: "User must be logged in to add items to the cart" });
     }
-
+    console.log(req.body)
     const product = await productModel
       .findById(productId)
       .select("final_price MRP variants total_stock is_deleted");
-    
+
     if (!product || product.is_deleted) {
       return res.status(404).json({ message: "Product not found" });
     }
 
     const variant = product.variants.find((v) => v.size === size);
     if (!variant) {
-      return res.status(400).json({ message: "Invalid size or color selected" });
+      return res
+        .status(400)
+        .json({ message: "Invalid size or color selected" });
     }
 
     if (variant.stock < quantity) {
@@ -262,17 +264,19 @@ export const updateCartItem = async (req, res) => {
   try {
     // Find the cart by its ID and verify the user
     const cart = await cartModel.findOne({ _id: cartId, user: req.user.id });
-// To inspect the cart details
-      console.log(cart)
+    // To inspect the cart details
+    console.log(cart);
     if (!cart) {
-      return res.status(404).send("No cart found for the user or cart ID mismatch");
+      return res
+        .status(404)
+        .send("No cart found for the user or cart ID mismatch");
     }
 
     // Find the item in the cart
     const itemIndex = cart.items.findIndex(
-      (item)=>item._id.toString() === itemId
+      (item) => item._id.toString() === itemId
     );
-  console.log(cart.items);
+    console.log(cart.items);
 
     if (itemIndex > -1) {
       // Update the quantity
@@ -295,7 +299,6 @@ export const updateCartItem = async (req, res) => {
   }
 };
 
-
 export const listCartbyId = async (req, res) => {
   try {
     // Ensure user is logged in
@@ -311,6 +314,14 @@ export const listCartbyId = async (req, res) => {
       .populate("items.product"); // Adjust the query based on your cart schema
 
     // Check if the cart exists
+    if (cart == null || cart.items.length === 0) {
+      return res.status(200).json({
+        status: true,
+        message: "Cart is empty",
+        cart: null, // Optional: You can return `cart` as `null` if desired
+      });
+    }
+
     if (!cart) {
       return res.status(404).json({ status: false, message: "Cart not found" });
     }
@@ -345,10 +356,9 @@ export const deleteCartItem = async (req, res) => {
 
     // Find the index of the item to delete based on product ID, size, and color
     const itemIndex = cart.items.findIndex(
-      (item) =>
-        item.product.toString() === id
-        // item.size === size &&
-        // item.color === color
+      (item) => item.product.toString() === id
+      // item.size === size &&
+      // item.color === color
     );
 
     // Check if the product is in the cart
@@ -370,7 +380,11 @@ export const deleteCartItem = async (req, res) => {
 
     return res
       .status(200)
-      .json({ status: true, message: "Item removed from cart successfully", cart });
+      .json({
+        status: true,
+        message: "Item removed from cart successfully",
+        cart,
+      });
   } catch (error) {
     console.error("Error deleting cart item:", error);
     return res
@@ -378,4 +392,3 @@ export const deleteCartItem = async (req, res) => {
       .json({ status: false, message: "Internal server error" });
   }
 };
-

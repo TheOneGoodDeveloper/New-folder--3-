@@ -210,7 +210,7 @@ export const verifyRazorpayPayment = async (req, res) => {
 export const getAllOrders = async (req, res) => {
   try {
     // Retrieve all orders from the database
-    const orders = await Order.find()
+    const orders = await orderModel.find()
       .populate("userId")
       .populate("products.productId"); // Assuming Order has references to 'userId' and 'products.productId'
 

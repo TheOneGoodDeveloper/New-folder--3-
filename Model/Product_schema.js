@@ -142,6 +142,11 @@ const productSchema = new mongoose.Schema(
       min: 0, // Must be non-negative
       max: 100, // Should not exceed 100
     },
+    gst:{
+      type: Number,
+      required: true, // GST amount
+      min: 0, // Must be non-negative
+    },
     price_with_gst: {
       type: Number,
       required: true, // Price including GST
@@ -154,11 +159,11 @@ const productSchema = new mongoose.Schema(
       min: 0, // Must be non-negative
       max: 5, // Rating should not exceed 5
     },
-    storeType: {
-      type: String,
-      enum: ["online", "offline", "both"], // Specifies the store type
-      default: "online", // Default is online store
-    },
+    // storeType: {
+    //   type: String,
+    //   enum: ["online", "offline", "both"], // Specifies the store type
+    //   default: "online", // Default is online store
+    // },
     is_deleted: {
       type: Boolean,
       default: false, // Track if the product is deleted

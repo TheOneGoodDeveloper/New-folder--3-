@@ -20,7 +20,7 @@ UserRoute.delete("/deleteAddress",User.authMiddleware,Address.deleteAddress);
 UserRoute.get("/getAddressesByUser",User.authMiddleware,Address.getAddressesByUserId);
 UserRoute.put("/setDefault",User.authMiddleware,Address.setDefaultAddress);
 UserRoute.post("/getUserById",User.authMiddleware,User.getUserById);
-UserRoute.post("/createCart", Cart.createCart);
+UserRoute.post("/createCart",User.authMiddleware, Cart.createCart);
 UserRoute.post("/updateCart",Cart.authMiddleware,Cart.updateCartItem)
 UserRoute.post("/deleteCart",Cart.authMiddleware,Cart.deleteCartItem)
 UserRoute.get("/listCartById",Cart.authMiddleware,Cart.listCartbyId)

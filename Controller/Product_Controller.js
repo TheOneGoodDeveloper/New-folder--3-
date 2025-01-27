@@ -286,6 +286,7 @@ export const createProduct = async (req, res) => {
       gender,
       color,
       gst_percentage,
+      gst,
       category,
       subCategory,
       variants,
@@ -329,7 +330,7 @@ export const createProduct = async (req, res) => {
     });
 
     // Generate a product ID
-    const productId = await generateProductId(category, name);
+    const productId = await generateProductId(category, name,);
 
     // Generate unique variants and details
     const UniqueVariants = variants.map((variant) => ({
@@ -428,6 +429,7 @@ export const createProduct = async (req, res) => {
       gst_percentage,
       product_storeType: product_storeType || "online",
       price_with_gst: gstResult.priceWithGST,
+      gst : gstResult.gstAmount,
       final_price: gstResult.finalPrice,
       category_id: category,
       sub_category_id: subCategory,
