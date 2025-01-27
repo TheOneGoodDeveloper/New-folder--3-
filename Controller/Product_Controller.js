@@ -1083,13 +1083,6 @@ export const getAllProducts = async (req, res) => {
 
     console.log("Fetched Products (Raw):", products); // Debugging log
 
-    // Filter products where both category and subcategory are valid
-    // const filteredProducts = products.filter(
-    //   (product) => product.category_id && product.sub_category_id
-    // );
-
-    // console.log("Filtered Products:", filteredProducts); // Debugging log
-
     return res
       .status(200)
       .json({
