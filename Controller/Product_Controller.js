@@ -1555,6 +1555,7 @@ export const latestProducts = async (req, res) => {
 
   try {
     const products = await productModel.find().sort({ createdAt: -1 }).limit(10);
+    console.log(products);
     res.status(200).json({ products, message: "Latest products fetched successfully" });
   } catch (error) {
     console.error("Error fetching latest products:", error);
