@@ -33,6 +33,7 @@ UserRoute.post("/filterProducts", Product.filterProducts);
 UserRoute.get("/getAllCategory", Category.getAllCategories);
 UserRoute.get("/productByCategory", Product.productByCategory);
 UserRoute.post("/productByPrice",Product.productByPrice)
+UserRoute.post("/latestProducts",Product.latestProducts)
 UserRoute.get("/productByGender",Product.ProductByGender);
 UserRoute.get("/getProductById", Product.getProductById);
 UserRoute.post("/similarProductsByColor", Product.getColorsForSimilarProducts);

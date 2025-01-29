@@ -495,7 +495,9 @@ export const getAllProducts = async (req, res) => {
   try {
     const products = await productModel
       .find({ vendor_id: req.user.id })
-      .populate("category_id", "name") // Populate the category name from Category model
+      .populate("category_id", "name")
+      .populate("sub_category_id","name")
+      .populate("vendor_id","name email") // Populate the category name from Category model
       .exec();
 
     return res

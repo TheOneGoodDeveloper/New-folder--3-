@@ -330,7 +330,7 @@ export const createProduct = async (req, res) => {
     });
 
     // Generate a product ID
-    const productId = await generateProductId(category, name,);
+    const productId = await generateProductId(category, name);
 
     // Generate unique variants and details
     const UniqueVariants = variants.map((variant) => ({
@@ -429,7 +429,7 @@ export const createProduct = async (req, res) => {
       gst_percentage,
       product_storeType: product_storeType || "online",
       price_with_gst: gstResult.priceWithGST,
-      gst : gstResult.gstAmount,
+      gst: gstResult.gstAmount,
       final_price: gstResult.finalPrice,
       category_id: category,
       sub_category_id: subCategory,
@@ -798,77 +798,230 @@ export const createProduct = async (req, res) => {
 //   }
 // };
 
+// export const updateProduct = async (req, res) => {
+//   try {
+//     // Check user authorization
+//     if (req.user.role !== "vendor") {
+//       return res
+//         .status(401)
+//         .json({ status: false, error: "Unauthorized access" });
+//     }
+
+//     // Handle file uploads with a promise
+//     await new Promise((resolve, reject) => {
+//       handleFileUploads(req, res, (err) => {
+//         if (err) return reject(err);
+//         resolve();
+//       });
+//     });
+
+//     // Extract and validate required fields from request body
+//     const {
+//       productId,
+//       name,
+//       gender,
+//       description,
+//       selling_price,
+//       MRP, // Using selling_price instead of MRP
+//       offer_percentage,
+//       color,
+//       gst_percentage,
+//       category,
+//       variants,
+//       product_details,
+//       country_of_origin,
+//       seller_details,
+//     } = req.body;
+
+//     console.log(req.body);
+//     console.log(req.files);
+
+//     // Check if product ID is provided
+//     if (!productId) {
+//       return res
+//         .status(400)
+//         .json({ status: false, error: "Product ID is required" });
+//     }
+
+//     // Validate required fields
+//     if (!name || !description || !selling_price || !category || !variants) {
+//       return res
+//         .status(400)
+//         .json({ status: false, error: "Missing required fields" });
+//     }
+
+//     // Find existing product by ID
+//     const existingProduct = await productModel.findById(productId);
+//     if (!existingProduct) {
+//       return res
+//         .status(404)
+//         .json({ status: false, error: "Product not found" });
+//     }
+
+//     // Process and rename files if new ones are uploaded
+//     let images = existingProduct.images;
+//     if (req.files && req.files.length > 0) {
+//       // Remove old images
+//       existingProduct.images.forEach((imagePath) => {
+//         fs.unlink(imagePath, (err) => {
+//           if (err) console.error("Failed to remove old image:", err);
+//         });
+//       });
+
+//       // Save new images
+//       images = req.files.map((file) => {
+//         const extension = path.extname(file.originalname);
+//         const uniqueName = `product-${Date.now()}${extension}`;
+//         const newPath = path.join("Assets/Products", uniqueName);
+//         fs.renameSync(file.path, newPath);
+//         return newPath;
+//       });
+//     }
+
+//     // Process seller details
+//     const processedSellerDetails = {
+//       name:
+//         seller_details[0]?.seller_name || existingProduct.seller_details.name,
+//       location:
+//         seller_details[0]?.seller_location ||
+//         existingProduct.seller_details.location,
+//     };
+
+//     // GST calculation
+//     const gstResult = calculateGST(
+//       selling_price,
+//       gst_percentage,
+//       offer_percentage
+//     );
+//     const totalStock = calculateTotalStock(variants);
+
+//     // Prepare updated product data
+//     const updateData = {
+//       name,
+//       gender,
+//       description,
+//       MRP,
+//       selling_price,
+//       offer_percentage,
+//       color: color.toLowerCase(),
+//       gst_percentage,
+//       price_with_gst: gstResult.priceWithGST,
+//       final_price: Math.floor(gstResult.finalPrice),
+//       category_id: category,
+//       total_stock: totalStock,
+//       variants,
+//       product_details,
+//       country_of_origin,
+//       seller_details: processedSellerDetails,
+//       images,
+//     };
+
+//     // Update product in the database
+//     const updatedProduct = await productModel.findByIdAndUpdate(
+//       productId,
+//       { $set: updateData },
+//       { new: true, runValidators: true }
+//     );
+
+//     if (!updatedProduct) {
+//       return res
+//         .status(404)
+//         .json({ status: false, error: "Product update failed" });
+//     }
+
+//     // Indicate successful product update
+//     return res.status(200).json({
+//       status: true,
+//       message: "Product updated successfully",
+//       data: updatedProduct,
+//     });
+//   } catch (error) {
+//     // Handle any errors that occur
+//     console.error("Error in product update:", error);
+//     return res.status(500).json({
+//       status: false,
+//       error: "Server error occurred while updating the product",
+//     });
+//   }
+// };
+
 export const updateProduct = async (req, res) => {
   try {
-    // Check user authorization
+    // Authorization check
     if (req.user.role !== "vendor") {
-      return res
-        .status(401)
-        .json({ status: false, error: "Unauthorized access" });
+      return res.status(401).json({ error: "Unauthorized access" });
     }
 
     // Handle file uploads with a promise
     await new Promise((resolve, reject) => {
       handleFileUploads(req, res, (err) => {
-        if (err) return reject(err);
+        if (err) reject(err);
         resolve();
       });
     });
 
-    // Extract and validate required fields from request body
+    const productId = req.params.id; // Product ID to update
     const {
-      productId,
       name,
-      gender,
       description,
+      MRP,
       selling_price,
-      MRP, // Using selling_price instead of MRP
-      offer_percentage,
+      gender,
       color,
       gst_percentage,
       category,
+      subCategory,
       variants,
       product_details,
       country_of_origin,
       seller_details,
+      product_storeType,
     } = req.body;
 
-    console.log(req.body);
-    console.log(req.files);
-
-    // Check if product ID is provided
-    if (!productId) {
-      return res
-        .status(400)
-        .json({ status: false, error: "Product ID is required" });
-    }
-
     // Validate required fields
-    if (!name || !description || !selling_price || !category || !variants) {
+    if (
+      !name ||
+      !description ||
+      !MRP ||
+      !selling_price ||
+      !category ||
+      !variants
+    ) {
       return res
         .status(400)
         .json({ status: false, error: "Missing required fields" });
     }
 
-    // Find existing product by ID
-    const existingProduct = await productModel.findById(productId);
+    // Check if product exists
+    const existingProduct = await productModel.findOne({
+      product_id: productId,
+      vendor_id: req.user.id,
+    });
+
     if (!existingProduct) {
-      return res
-        .status(404)
-        .json({ status: false, error: "Product not found" });
+      return res.status(404).json({ error: "Product not found" });
     }
 
-    // Process and rename files if new ones are uploaded
-    let images = existingProduct.images;
-    if (req.files && req.files.length > 0) {
-      // Remove old images
-      existingProduct.images.forEach((imagePath) => {
-        fs.unlink(imagePath, (err) => {
-          if (err) console.error("Failed to remove old image:", err);
-        });
+    // Check for duplicate variants
+    for (let variant of variants) {
+      const { size, color: variantColor, gender: variantGender } = variant;
+      const duplicateVariant = await productModel.findOne({
+        "variants.size": size,
+        "variants.color": variantColor,
+        "variants.gender": variantGender,
+        product_id: { $ne: productId },
       });
 
-      // Save new images
+      if (duplicateVariant) {
+        return res.status(400).json({
+          error: `A product with these specifications already exists: (${variantGender}, ${size}, ${variantColor})`,
+        });
+      }
+    }
+
+    // Process uploaded files and update image paths
+    let images = existingProduct.images;
+    if (req.files.length > 0) {
       images = req.files.map((file) => {
         const extension = path.extname(file.originalname);
         const uniqueName = `product-${Date.now()}${extension}`;
@@ -878,8 +1031,51 @@ export const updateProduct = async (req, res) => {
       });
     }
 
-    // Process seller details
-    const processedSellerDetails = {
+    // Calculate GST, final price, and total stock
+    const calculateGST = (MRP, selling_price, gstPercentage) => {
+      const sellingPriceValue = parseFloat(selling_price);
+      const gstPercentageValue = parseFloat(gstPercentage);
+      const gstAmount = sellingPriceValue * (gstPercentageValue / 100);
+      const priceWithGST = sellingPriceValue + gstAmount;
+      const commission = sellingPriceValue * 0.02;
+      const finalPrice = priceWithGST + commission;
+
+      return {
+        gstAmount: gstAmount.toFixed(2),
+        priceWithGST: priceWithGST.toFixed(2),
+        finalPrice: finalPrice.toFixed(2),
+      };
+    };
+
+    const calculateTotalStock = (variants) => {
+      return variants.reduce((totalStock, variant) => {
+        const stockValue = parseInt(variant.stock, 10);
+        if (isNaN(stockValue)) {
+          throw new Error("Each variant must have a valid stock number.");
+        }
+        return totalStock + stockValue;
+      }, 0);
+    };
+
+    const gstResult = calculateGST(MRP, selling_price, gst_percentage);
+    const totalStock = calculateTotalStock(variants);
+
+    // Generate updated variants and details
+    const updatedVariants = variants.map((variant) => ({
+      variant_id: generateVariantId(productId, variant.size, variant.color),
+      ...variant,
+    }));
+
+    const updatedDetails = product_details.map((detail, index) => ({
+      detail_id: generateProductDetailsId(
+        productId,
+        updatedVariants[index].size,
+        updatedVariants[index].color
+      ),
+      ...detail,
+    }));
+
+    const updatedSellerDetails = {
       name:
         seller_details[0]?.seller_name || existingProduct.seller_details.name,
       location:
@@ -887,61 +1083,40 @@ export const updateProduct = async (req, res) => {
         existingProduct.seller_details.location,
     };
 
-    // GST calculation
-    const gstResult = calculateGST(
-      selling_price,
-      gst_percentage,
-      offer_percentage
-    );
-    const totalStock = calculateTotalStock(variants);
+    // Update product fields
+    existingProduct.name = name;
+    existingProduct.description = description;
+    existingProduct.MRP = MRP;
+    existingProduct.selling_price = selling_price;
+    existingProduct.gender = gender;
+    existingProduct.color = color;
+    existingProduct.category_id = category;
+    existingProduct.sub_category_id = subCategory;
+    existingProduct.gst_percentage = gst_percentage;
+    existingProduct.gst = gstResult.gstAmount;
+    existingProduct.final_price = gstResult.finalPrice;
+    existingProduct.price_with_gst = gstResult.priceWithGST;
+    existingProduct.total_stock = totalStock;
+    existingProduct.country_of_origin = country_of_origin;
+    existingProduct.seller_details = updatedSellerDetails;
+    existingProduct.product_storeType = product_storeType || "online";
+    existingProduct.variants = updatedVariants;
+    existingProduct.product_details = updatedDetails;
+    existingProduct.images = images;
 
-    // Prepare updated product data
-    const updateData = {
-      name,
-      gender,
-      description,
-      MRP,
-      selling_price,
-      offer_percentage,
-      color: color.toLowerCase(),
-      gst_percentage,
-      price_with_gst: gstResult.priceWithGST,
-      final_price: Math.floor(gstResult.finalPrice),
-      category_id: category,
-      total_stock: totalStock,
-      variants,
-      product_details,
-      country_of_origin,
-      seller_details: processedSellerDetails,
-      images,
-    };
+    // Save updated product
+    await existingProduct.save();
 
-    // Update product in the database
-    const updatedProduct = await productModel.findByIdAndUpdate(
-      productId,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedProduct) {
-      return res
-        .status(404)
-        .json({ status: false, error: "Product update failed" });
-    }
-
-    // Indicate successful product update
-    return res.status(200).json({
-      status: true,
+    // Respond with success
+    res.status(200).json({
       message: "Product updated successfully",
-      data: updatedProduct,
+      updatedProduct: existingProduct,
     });
   } catch (error) {
-    // Handle any errors that occur
-    console.error("Error in product update:", error);
-    return res.status(500).json({
-      status: false,
-      error: "Server error occurred while updating the product",
-    });
+    console.error("Error updating product:", error);
+    res
+      .status(500)
+      .json({ error: "Server error occurred while updating the product" });
   }
 };
 
@@ -1079,16 +1254,14 @@ export const getAllProducts = async (req, res) => {
       .populate({
         path: "sub_category_id",
         select: "name", // Include only the subcategory name
-      }) // Exclude deleted products;
+      }); // Exclude deleted products;
 
     console.log("Fetched Products (Raw):", products); // Debugging log
 
-    return res
-      .status(200)
-      .json({
-        products,
-        message: "Products fetched successfully",
-      });
+    return res.status(200).json({
+      products,
+      message: "Products fetched successfully",
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
     return res
@@ -1096,7 +1269,6 @@ export const getAllProducts = async (req, res) => {
       .json({ message: "Error fetching products", error: error.message });
   }
 };
-
 
 export const filterProducts = async (req, res) => {
   try {
@@ -1261,7 +1433,11 @@ export const getProductById = async (req, res) => {
         .json({ status: false, message: "Product ID is required" });
     }
 
-    const product = await productModel.findById(productId);
+    const product = await productModel
+      .findById(productId)
+      .populate("category_id","name")
+      .populate("sub_category_id","name")
+      .populate("vendor_id","name email");
     if (!product) {
       return res
         .status(404)
@@ -1367,11 +1543,22 @@ export const getRecentProducts = async (req, res) => {
       .json({ products, message: "Recent products fetched successfully" });
   } catch (error) {
     console.error("Error fetching recent products:", error);
-    res
-      .status(500)
-      .json({
-        message: "Error fetching recent products",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Error fetching recent products",
+      error: error.message,
+    });
   }
 };
+
+
+export const latestProducts = async (req, res) => {
+
+  try {
+    const products = await productModel.find().sort({ createdAt: -1 }).limit(10);
+    res.status(200).json({ products, message: "Latest products fetched successfully" });
+  } catch (error) {
+    console.error("Error fetching latest products:", error);
+    res.status(500).json({ message: "Error fetching latest products", error: error.message });
+  }
+
+}
