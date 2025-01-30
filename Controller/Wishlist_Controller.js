@@ -51,7 +51,7 @@ export const addProductToWishlist = async (req, res) => {
 // Get the user's wishlist
 export const getUserWishlist = async (req, res) => {
   try {
-    const { user_id } = req.params;
+    const { id:user_id } = req.user;
 
     // Find the wishlist for the user
     const wishlist = await WishlistModel.findOne({ user_id }).populate("items");
