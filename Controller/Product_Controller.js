@@ -5,6 +5,7 @@ import { promisify } from "util";
 
 import { productModel } from "../Model/Product_schema.js";
 import { categoryModel } from "../Model/Categories_schema.js";
+import { WishlistModel } from "../Model/Wishlist_schema.js";
 // import { subcategoryModel } from "../Model/SubCategory_schema.js";
 
 // Configure multer for handling multiple file uploads and renaming files
@@ -1269,6 +1270,10 @@ export const getAllProducts = async (req, res) => {
       .json({ message: "Error fetching products", error: error.message });
   }
 };
+
+
+
+
 
 export const filterProducts = async (req, res) => {
   try {
