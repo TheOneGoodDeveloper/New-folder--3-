@@ -1275,6 +1275,99 @@ export const getAllProducts = async (req, res) => {
 
 
 
+// export const filterProducts = async (req, res) => {
+//   try {
+//     const { color = [], categoryId = "", price = [], size = [] } = req.body;
+//     console.log(req.body);
+
+//     const filterConditions = {};
+
+//     // Apply color filter
+//     if (color.length > 0) {
+//       const trimmedColors = color.filter(Boolean).map((item) => item.trim());
+//       if (trimmedColors.length > 0) {
+//         filterConditions.color = { $in: trimmedColors };
+//       }
+//     }
+
+//     // Apply category filter
+//     if (categoryId) {
+//       filterConditions.category_id = categoryId.trim();
+//     }
+
+//     // Apply price filter (assumes price format is 'min - max')
+//     if (price.length > 0) {
+//       const [minPrice, maxPrice] = price[0]
+//         .split(" - ")
+//         .map((item) => parseInt(item, 10));
+//       if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+//         filterConditions.price = { $gte: minPrice, $lte: maxPrice };
+//       }
+//     }
+
+//     // Apply size filter (check within variants array)
+//     if (size.length > 0) {
+//       const trimmedSizes = size.filter(Boolean).map((item) => item.trim());
+//       if (trimmedSizes.length > 0) {
+//         filterConditions["variants.size"] = { $in: trimmedSizes }; // Filter within the variants array
+//       }
+//     }
+
+//     // Fetch products based on filter conditions and populate the category field
+//     const products = await productModel.find(filterConditions);
+//     console.log("Filter conditions:", filterConditions);
+
+//     // Respond if no products are found
+//     if (products.length === 0) {
+//       return res
+//         .status(200)
+//         .json({ message: "No products found matching the criteria." });
+//     }
+
+//     return res.status(200).json({ products });
+//   } catch (error) {
+//     console.error("Error filtering products:", error);
+//     return res.status(500).json({
+//       message: "Internal server error occurred while filtering products.",
+//     });
+//   }
+// };
+
+// Controller function for filtering products by price
+// export const productByPrice = async (req, res) => {
+//   try {
+//     const { price } = req.body;
+//     console.log(req.body);
+//     if (price && price.length > 0) {
+//       const [minPrice, maxPrice] = price
+//         .split(" - ")
+//         .map((item) => parseInt(item, 10));
+//       if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+//         const priceFilter = { price: { $gte: minPrice, $lte: maxPrice } };
+
+//         // Fetch products within the price range
+//         const products = await productModel.find(priceFilter);
+
+//         // Respond if no products are found
+//         if (products.length === 0) {
+//           return res.status(404).json({
+//             message: "No products found in the specified price range.",
+//           });
+//         }
+
+//         return res.status(200).json({ products });
+//       }
+//     }
+//     return res.status(400).json({ message: "Invalid price range format." });
+//   } catch (error) {
+//     console.error("Error filtering products by price:", error);
+//     return res.status(500).json({
+//       message:
+//         "Internal server error occurred while filtering products by price.",
+//     });
+//   }
+// };
+
 export const filterProducts = async (req, res) => {
   try {
     const { color = [], categoryId = "", price = [], size = [] } = req.body;
@@ -1295,11 +1388,12 @@ export const filterProducts = async (req, res) => {
       filterConditions.category_id = categoryId.trim();
     }
 
-    // Apply price filter (assumes price format is 'min - max')
+    // Apply price filter (assumes price format is 'min-max')
     if (price.length > 0) {
       const [minPrice, maxPrice] = price[0]
-        .split(" - ")
-        .map((item) => parseInt(item, 10));
+        .split("-")  // Split without spaces
+        .map((item) => parseInt(item.trim(), 10));  // Trim spaces and parse to integers
+      console.log(`Price filter: minPrice = ${minPrice}, maxPrice = ${maxPrice}`);
       if (!isNaN(minPrice) && !isNaN(maxPrice)) {
         filterConditions.price = { $gte: minPrice, $lte: maxPrice };
       }
@@ -1313,9 +1407,11 @@ export const filterProducts = async (req, res) => {
       }
     }
 
-    // Fetch products based on filter conditions and populate the category field
-    const products = await productModel.find(filterConditions);
     console.log("Filter conditions:", filterConditions);
+
+    // Fetch products based on filter conditions
+    const products = await productModel.find(filterConditions);
+    console.log("Fetched products:", products);
 
     // Respond if no products are found
     if (products.length === 0) {
@@ -1333,16 +1429,19 @@ export const filterProducts = async (req, res) => {
   }
 };
 
-// Controller function for filtering products by price
+
+
+
 export const productByPrice = async (req, res) => {
   try {
     const { price } = req.body;
+    console.log(req.body);
     if (price && price.length > 0) {
       const [minPrice, maxPrice] = price
-        .split(" - ")
-        .map((item) => parseInt(item, 10));
+        .split("-")  // Split by a hyphen without spaces
+        .map((item) => parseInt(item.trim(), 10));  // Trim any extra spaces and parse to integers
       if (!isNaN(minPrice) && !isNaN(maxPrice)) {
-        const priceFilter = { price: { $gte: minPrice, $lte: maxPrice } };
+        const priceFilter = { final_price: { $gte: minPrice, $lte: maxPrice } };
 
         // Fetch products within the price range
         const products = await productModel.find(priceFilter);

@@ -118,6 +118,7 @@ export const registerUser = async (req, res) => {
       password: hashedPassword,
       phone_number,
       role: "customer",
+      customer_type: "online",
       // address,
     });
 
@@ -234,16 +235,16 @@ export const updateUser = async (req, res) => {
         { name, email, phone_number },
         { new: true, runValidators: true }
       );
-      if(updateUser.length == 0){
-          return res.json("user not updated")
+      if (updateUser.length == 0) {
+        return res.json("user not updated");
       }
       console.log(updatedUser);
       // Check if the address field is present in the request body
       if (address) {
-        if(address._id){
-          await Address.updateAddress(req,res);
+        if (address._id) {
+          await Address.updateAddress(req, res);
         }
-        await Address.addAddress(req,res);
+        await Address.addAddress(req, res);
       }
 
       return res.status(200).json({
@@ -276,9 +277,11 @@ const sendOTP = (phone_number, otp) => {
 export const mobileLogin = async (req, res) => {
   try {
     const { phone_number } = req.body;
-    console.log(req.body);  
+    console.log(req.body);
     if (!phone_number) {
-      return res.status(400).json({ status: false, message: "Phone number is required" });
+      return res
+        .status(400)
+        .json({ status: false, message: "Phone number is required" });
     }
 
     // Find user by phone number
@@ -298,10 +301,12 @@ export const mobileLogin = async (req, res) => {
 
     return res.status(200).json({
       status: true,
-      message: "OTP sent successfully. Please check your phone."
+      message: "OTP sent successfully. Please check your phone.",
     });
   } catch (error) {
-    return res.status(500).json({ status: false, message: "Internal server error", error });
+    return res
+      .status(500)
+      .json({ status: false, message: "Internal server error", error });
   }
 };
 
@@ -309,9 +314,11 @@ export const mobileLogin = async (req, res) => {
 export const verifyOTPAndLogin = async (req, res) => {
   try {
     const { phone_number, otp } = req.body;
-    
+
     if (!phone_number || !otp) {
-      return res.status(400).json({ status: false, message: "Phone number and OTP are required" });
+      return res
+        .status(400)
+        .json({ status: false, message: "Phone number and OTP are required" });
     }
 
     // Find user by phone number
@@ -350,6 +357,48 @@ export const verifyOTPAndLogin = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ status: false, message: "Internal server error", error });
+    return res
+      .status(500)
+      .json({ status: false, message: "Internal server error", error });
+  }
+};
+
+export const offlineuser = async (req, res) => {
+  try {
+    const { name, email, phone_number } = req?.body;
+    // Validate required fields
+    if (!name || !email || !phone_number) {
+      return res.status(400).json({
+        status: false,
+        message: "Name, email are required",
+      });
+    }
+
+    // Check if email is already in use
+    const existingUser = await userModel.findOne({ phone_number });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ status: false, message: "phone number is already in use" });
+    }
+    // Create the new user
+    const newUser = new userModel({
+      name,
+      email,
+      phone_number,
+      role: "customer",
+      customer_type: "offline",
+      // address,
+    });
+    // Save the user to the database
+    await newUser.save();
+    return res.status(201).json({
+      status: true,
+      message: "User created successfully",
+    });
+  } catch {
+    return res
+      .status(500)
+      .json({ status: false, message: "Internal server error" });
   }
 };

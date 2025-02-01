@@ -4,8 +4,18 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    email: { type: String, required: true, lowercase: true, unique: true },
+    password: {
+      type: String,
+      required: function () {
+        return this.customer_type === "online";
+      },
+    },
+    customer_type: {
+      type: String,
+      enum: ["online", "offline"],
+      required: true,
+    },
     phone_number: { type: String },
     otp: { type: String }, // Store OTP temporarily
     otp_expiry: { type: Date, default: Date.now }, // OTP expiration time
