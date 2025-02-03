@@ -4,14 +4,19 @@ const orderSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'users',
+      ref: "users",
+      required: true,
+    },
+    vendor_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Vendors",
       required: true,
     },
     products: [
       {
         productId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: 'Product',
+          ref: "Product",
           required: true,
         },
         name: { type: String, required: true },
@@ -22,23 +27,29 @@ const orderSchema = new mongoose.Schema(
     ],
     shippingAddress: {
       type: mongoose.Schema.Types.ObjectId, // Reference to address model
-      ref: 'Address', // Reference to the Address model
+      ref: "Address", // Reference to the Address model
       required: true,
     },
     paymentMethod: {
       type: String,
-      enum: ['Credit Card', 'Debit Card', 'PayPal', 'Cash on Delivery', 'Razorpay'],
+      enum: [
+        "Credit Card",
+        "Debit Card",
+        "PayPal",
+        "Cash on Delivery",
+        "Razorpay",
+      ],
       required: true,
     },
     paymentStatus: {
       type: String,
-      enum: ['Pending', 'Completed', 'Failed'],
-      default: 'Pending',
+      enum: ["Pending", "Completed", "Failed"],
+      default: "Pending",
     },
     razorpayOrderId: {
       type: String,
       required: function () {
-        return this.paymentMethod === 'Razorpay';
+        return this.paymentMethod === "Razorpay";
       },
     },
     razorpayPaymentId: {
@@ -53,8 +64,8 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-      default: 'Pending',
+      enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+      default: "Pending",
     },
     deliveredAt: {
       type: Date,
@@ -69,4 +80,4 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
-export const orderModel = mongoose.model('Orders', orderSchema);
+export const orderModel = mongoose.model("Orders", orderSchema);

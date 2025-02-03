@@ -11,11 +11,90 @@ const razorpayInstance = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// export const createOrder = async (req, res) => {
+//   try {
+//     const { cartId, address_id, paymentMethod = "Razorpay" } = req.body;
+//     console.log(req.body);
+//     // Validate request data
+//     if (!cartId || !address_id) {
+//       return res
+//         .status(400)
+//         .json({ message: "Cart ID and Address ID are required" });
+//     }
+
+//     // Retrieve the cart
+//     const cart = await cartModel
+//       .findById(cartId)
+//       .populate("items.product", "name price");
+//     if (!cart || cart.items.length === 0) {
+//       return res
+//         .status(400)
+//         .json({ message: "Cart is empty or does not exist" });
+//     }
+//     // Retrieve the shipping address
+//     const shippingAddress = await addressModel.findById(address_id);
+//     console.log(shippingAddress);
+//     if (!shippingAddress) {
+//       return res.status(404).json({ message: "Shipping address not found" });
+//     }
+
+//     // Map cart items to order products and calculate total amount
+//     const orderProducts = cart.items.map((item) => ({
+//       productId: item.product._id,
+//       name: item.product.name,
+//       quantity: item.quantity,
+//       price: item.price,
+//       total: item.quantity * item.price,
+//     }));
+//     const totalAmount = orderProducts.reduce(
+//       (sum, item) => sum + item.total,
+//       0
+//     );
+//     console.log(orderProducts);
+//     console.log(totalAmount);
+
+//     // Razorpay order creation (if payment method is Razorpay)
+//     let razorpayOrderId = null;
+//     if (paymentMethod === "Razorpay") {
+//       const razorpayOrder = await razorpayInstance.orders.create({
+//         amount: totalAmount * 100, // Convert to paisa
+//         currency: "INR",
+//         receipt: `order_${Date.now()}`,
+//       });
+//       razorpayOrderId = razorpayOrder.id;
+//     }
+
+//     // Prepare order data
+//     const orderData = {
+//       userId: cart.user,
+//       products: orderProducts,
+//       shippingAddress: address_id,
+//       paymentMethod,
+//       razorpayOrderId,
+//       totalAmount,
+//     };
+
+//     // Save the order to the database
+//     const order = await orderModel.create(orderData);
+
+//     // Delete the cart after successful order creation
+//     await cartModel.findByIdAndDelete(cartId);
+
+//     return res.status(201).json({
+//       message: "Order created successfully",
+//       order,
+//     });
+//   } catch (error) {
+//     console.log(error)
+//     return res.status(500).json({ message: "Failed to create order", error });
+//   }
+// };
+
 export const createOrder = async (req, res) => {
   try {
     const { cartId, address_id, paymentMethod = "Razorpay" } = req.body;
     console.log(req.body);
-    // Validate request data
+
     if (!cartId || !address_id) {
       return res
         .status(400)
@@ -25,15 +104,15 @@ export const createOrder = async (req, res) => {
     // Retrieve the cart
     const cart = await cartModel
       .findById(cartId)
-      .populate("items.product", "name price");
+      .populate("items.product", "name price vendor total_stock");
     if (!cart || cart.items.length === 0) {
       return res
         .status(400)
         .json({ message: "Cart is empty or does not exist" });
     }
+
     // Retrieve the shipping address
     const shippingAddress = await addressModel.findById(address_id);
-    console.log(shippingAddress);
     if (!shippingAddress) {
       return res.status(404).json({ message: "Shipping address not found" });
     }
@@ -42,18 +121,27 @@ export const createOrder = async (req, res) => {
     const orderProducts = cart.items.map((item) => ({
       productId: item.product._id,
       name: item.product.name,
+      vendor: item.product.vendor, // Fetch vendor ID from the product
       quantity: item.quantity,
       price: item.price,
       total: item.quantity * item.price,
     }));
+
     const totalAmount = orderProducts.reduce(
       (sum, item) => sum + item.total,
       0
     );
-    console.log(orderProducts);
-    console.log(totalAmount);
 
-    // Razorpay order creation (if payment method is Razorpay)
+    // Group products by vendor
+    const vendorOrders = {};
+    orderProducts.forEach((product) => {
+      if (!vendorOrders[product.vendor]) {
+        vendorOrders[product.vendor] = [];
+      }
+      vendorOrders[product.vendor].push(product);
+    });
+
+    // Razorpay order creation
     let razorpayOrderId = null;
     if (paymentMethod === "Razorpay") {
       const razorpayOrder = await razorpayInstance.orders.create({
@@ -64,28 +152,41 @@ export const createOrder = async (req, res) => {
       razorpayOrderId = razorpayOrder.id;
     }
 
-    // Prepare order data
-    const orderData = {
-      userId: cart.user,
-      products: orderProducts,
-      shippingAddress: address_id,
-      paymentMethod,
-      razorpayOrderId,
-      totalAmount,
-    };
+    // Save separate orders for each vendor
+    const createdOrders = [];
+    for (const [vendor, products] of Object.entries(vendorOrders)) {
+      const orderData = {
+        userId: cart.user,
+        vendor, // Associate vendor with the order
+        products,
+        shippingAddress: address_id,
+        paymentMethod,
+        razorpayOrderId,
+        totalAmount: products.reduce((sum, item) => sum + item.total, 0),
+      };
 
-    // Save the order to the database
-    const order = await orderModel.create(orderData);
+      const order = await orderModel.create(orderData);
+      createdOrders.push(order);
 
-    // Delete the cart after successful order creation
+      // **Update product stock** after order creation
+      for (const product of products) {
+        await productModel.findByIdAndUpdate(
+          product.productId,
+          { $inc: { total_stock: -product.quantity } },
+          { new: true }
+        );
+      }
+    }
+
+    // Delete the cart after successful order placement
     await cartModel.findByIdAndDelete(cartId);
 
     return res.status(201).json({
-      message: "Order created successfully",
-      order,
+      message: "Orders created successfully",
+      orders: createdOrders,
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({ message: "Failed to create order", error });
   }
 };
@@ -159,12 +260,12 @@ export const getOrdersByUser = async (req, res) => {
   try {
     const { userId } = req.body;
     console.log(userId);
-    const orders = await orderModel.find({ userId })
+    const orders = await orderModel.find({ userId });
 
     if (!orders || orders.length === 0) {
       return res.status(404).json({ message: "No orders found for this user" });
     }
-    console.log(orders)
+    console.log(orders);
     return res.status(200).json(orders);
   } catch (error) {
     return res
@@ -209,7 +310,8 @@ export const verifyRazorpayPayment = async (req, res) => {
 export const getAllOrders = async (req, res) => {
   try {
     // Retrieve all orders from the database
-    const orders = await orderModel.find()
+    const orders = await orderModel
+      .find()
       .populate("userId")
       .populate("products.productId"); // Assuming Order has references to 'userId' and 'products.productId'
 
@@ -224,4 +326,3 @@ export const getAllOrders = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch orders", error });
   }
 };
-
