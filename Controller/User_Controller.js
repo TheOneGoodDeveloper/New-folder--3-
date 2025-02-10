@@ -295,9 +295,8 @@ export const mobileLogin = async (req, res) => {
     const otp = generateOTP();
     sendOTP(phone_number, otp);
 
-    // Store the OTP temporarily (use session or cache for actual production)
-    user.otp = otp;
-    await user.save();
+    // Update OTP without triggering validation
+    await userModel.updateOne({ _id: user._id }, { $set: { otp } });
 
     return res.status(200).json({
       status: true,
@@ -309,6 +308,7 @@ export const mobileLogin = async (req, res) => {
       .json({ status: false, message: "Internal server error", error });
   }
 };
+
 
 // Verify OTP and login the user
 export const verifyOTPAndLogin = async (req, res) => {

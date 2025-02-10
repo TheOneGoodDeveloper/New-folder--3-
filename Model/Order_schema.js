@@ -22,7 +22,7 @@ const orderSchema = new mongoose.Schema(
         name: { type: String, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true }, // Price at the time of order
-        total: { type: Number, required: true }, // quantity * price
+        total: { type: Number, required: true }// quantity * price
       },
     ],
     shippingAddress: {

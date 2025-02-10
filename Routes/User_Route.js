@@ -6,6 +6,7 @@ import * as Category from "../Controller/Category_Controller.js";
 import * as Address from "../Controller/Address_Controller.js";
 import * as Order from "../Controller/Order_Controller.js";
 import * as Wish from "../Controller/Wishlist_Controller.js"
+import * as Review from "../Controller/Review_Controller.js";
 
 const UserRoute = express.Router();
 // user
@@ -59,4 +60,11 @@ UserRoute.put("/order/:id/status", User.authMiddleware, Order.updateOrderStatus)
 UserRoute.delete("/order/:id", User.authMiddleware, Order.deleteOrder);
 UserRoute.post("/getOrdersByUser", User.authMiddleware, Order.getOrdersByUser);
 UserRoute.post("/verifyPayment", User.authMiddleware, Order.verifyRazorpayPayment);
+
+// reviews
+UserRoute.post("/createReview", User.authMiddleware,Review.createReview);
+UserRoute.get("/getAllReviews", Review.getAllReviews);
+UserRoute.get("/getReviewById", Review.getReviewById);
+UserRoute.put("/updateReviewById",User.authMiddleware, Review.updateReviewById);
+UserRoute.delete("/deleteReviewById",User.authMiddleware, Review.deleteReviewById);
 export default UserRoute;
