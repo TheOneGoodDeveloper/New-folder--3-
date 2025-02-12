@@ -321,27 +321,24 @@ export const mobileLogin = async (req, res) => {
     }
 
     // Check if user exists
-    let user = await userModel.findOne({ phone_number });
-    let isNewUser = false;
+    const user = await userModel.findOne({ phone_number });
+    const isNewUser = !user; // If user doesn't exist, it's a new user
 
-    if (!user) {
-      // Create new user
-      user = new userModel({ phone_number });
-      await user.save();
-      isNewUser = true;
-    }
-
-    // Generate OTP and send it to the user's phone number (mocked)
+    // Generate OTP
     const otp = "123456"; // Replace with actual OTP generation logic
     sendOTP(phone_number, otp);
 
-    // Update OTP without triggering validation
-    await userModel.updateOne({ _id: user._id }, { $set: { otp } });
+    // Store OTP in database (even if user is new)
+    await userModel.updateOne(
+      { phone_number },
+      { $set: { otp, otp_expiry: new Date(Date.now() + 5 * 60 * 1000) } },
+      { upsert: true } // Creates a new document if user doesn't exist
+    );
 
     return res.status(200).json({
       status: true,
-      message: "OTP sent successfully. Please check your phone.",
-      is_new_user: isNewUser, // Inform frontend if the user is new
+      message: "OTP sent successfully.",
+      is_new_user: isNewUser, // Inform frontend if user is new
     });
   } catch (error) {
     return res
@@ -350,7 +347,59 @@ export const mobileLogin = async (req, res) => {
   }
 };
 
+
 // Verify OTP and login the user
+// export const verifyOTPAndLogin = async (req, res) => {
+//   try {
+//     const { phone_number, otp } = req.body;
+
+//     if (!phone_number || !otp) {
+//       return res
+//         .status(400)
+//         .json({ status: false, message: "Phone number and OTP are required" });
+//     }
+
+//     // Find user by phone number
+//     const user = await userModel.findOne({ phone_number });
+
+//     if (!user) {
+//       return res.status(404).json({ status: false, message: "User not found" });
+//     }
+
+//     // Check if OTP matches
+//     if (user.otp !== otp) {
+//       return res.status(400).json({ status: false, message: "Invalid OTP" });
+//     }
+
+//     // Clear OTP after successful validation (In production, use OTP expiration time)
+//     user.otp = null;
+//     await user.save();
+
+//     // Generate a JWT token after successful OTP validation
+//     const token = jwt.sign(
+//       { id: user._id, email: user.email, role: user.role },
+//       process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited",
+//       { expiresIn: "1h" }
+//     );
+
+//     return res.status(200).json({
+//       status: true,
+//       message: "Login successful",
+//       token,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         phone_number: user.phone_number,
+//         role: user.role,
+//       },
+//     });
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json({ status: false, message: "Internal server error", error });
+//   }
+// };
 export const verifyOTPAndLogin = async (req, res) => {
   try {
     const { phone_number, otp } = req.body;
@@ -361,25 +410,38 @@ export const verifyOTPAndLogin = async (req, res) => {
         .json({ status: false, message: "Phone number and OTP are required" });
     }
 
-    // Find user by phone number
-    const user = await userModel.findOne({ phone_number });
+    // Find OTP record in DB
+    let user = await userModel.findOne({ phone_number });
 
-    if (!user) {
-      return res.status(404).json({ status: false, message: "User not found" });
-    }
-
-    // Check if OTP matches
-    if (user.otp !== otp) {
+    if (!user || user.otp !== otp) {
       return res.status(400).json({ status: false, message: "Invalid OTP" });
     }
 
-    // Clear OTP after successful validation (In production, use OTP expiration time)
+    // Check if OTP expired
+    if (user.otp_expiry && new Date() > user.otp_expiry) {
+      return res.status(400).json({ status: false, message: "OTP expired. Please request a new one." });
+    }
+
+    let isNewUser = false;
+
+    // If user is new, create an account now
+    if (!user.name) { // Assuming 'name' is required for existing users
+      isNewUser = true;
+      user = new userModel({
+        phone_number,
+        role: "customer", // Default role
+      });
+      await user.save();
+    }
+
+    // Clear OTP after successful validation
     user.otp = null;
+    user.otp_expiry = null;
     await user.save();
 
-    // Generate a JWT token after successful OTP validation
+    // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, phone_number: user.phone_number, role: user.role },
       process.env.JWT_SECRET || "Evvi_Solutions_Private_Limited",
       { expiresIn: "1h" }
     );
@@ -388,13 +450,14 @@ export const verifyOTPAndLogin = async (req, res) => {
       status: true,
       message: "Login successful",
       token,
+      is_new_user: isNewUser, // Confirm if it's a new user
       user: {
         id: user._id,
-        name: user.name,
-        email: user.email,
+        name: user.name || "",
+        email: user.email || "",
         phone_number: user.phone_number,
-        role: user.role,
-      },
+        role: user.role || "customer",
+      }
     });
   } catch (error) {
     return res
