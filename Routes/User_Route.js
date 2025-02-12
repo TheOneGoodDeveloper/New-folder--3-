@@ -11,7 +11,7 @@ import * as Review from "../Controller/Review_Controller.js";
 const UserRoute = express.Router();
 // user
 UserRoute.post("/login", User.userLogin);
-UserRoute.post("/moblieLogin", User.mobileLogin);
+UserRoute.post("/mobileLogin", User.mobileLogin);
 UserRoute.post("/verifyOtp", User.verifyOTPAndLogin);
 UserRoute.post("/register", User.registerUser);
 // UserRoute.get("/getUserById",User.authMiddleware,User.getUserById);
