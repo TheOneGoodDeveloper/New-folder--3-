@@ -3,19 +3,19 @@ import mongoose from "mongoose";
 // Define the schema for the contact form
 const userSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, default: null },
+    name: { type: String,required: true, },
     email: {
       type: String,
-      required: true,
       lowercase: true,
       unique: true,
-      default: null,
+      required: true,
     },
     password: {
       type: String,
       required: function () {
         return this.customer_type === "online";
       },
+
     },
     customer_type: {
       type: String,

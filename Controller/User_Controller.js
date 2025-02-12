@@ -315,9 +315,7 @@ export const mobileLogin = async (req, res) => {
     const { phone_number } = req.body;
 
     if (!phone_number) {
-      return res
-        .status(400)
-        .json({ status: false, message: "Phone number is required" });
+      return res.status(400).json({ status: false, message: "Phone number is required" });
     }
 
     // Check if user exists
@@ -337,7 +335,14 @@ export const mobileLogin = async (req, res) => {
 
     if (!user) {
       // Create a minimal user record for new users
-      user = new userModel({ phone_number, otp, otp_expiry: new Date(Date.now() + 5 * 60 * 1000) });
+      user = new userModel({
+        phone_number,
+        otp,
+        otp_expiry: new Date(Date.now() + 5 * 60 * 1000),
+        name: "Guest User", // Temporary default
+        email: `${phone_number}@guest.com`, // Temporary email
+        password: "default_password", // Temporary password
+      });
       await user.save();
     } else {
       // Update OTP for existing users
@@ -354,9 +359,7 @@ export const mobileLogin = async (req, res) => {
     });
   } catch (error) {
     console.error("Server error:", error);
-    return res
-      .status(500)
-      .json({ status: false, message: "Internal server error", error: error.message });
+    return res.status(500).json({ status: false, message: "Internal server error", error: error.message });
   }
 };
 
