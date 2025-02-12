@@ -321,29 +321,42 @@ export const mobileLogin = async (req, res) => {
     }
 
     // Check if user exists
-    const user = await userModel.findOne({ phone_number });
-    const isNewUser = !user; // If user doesn't exist, it's a new user
+    let user = await userModel.findOne({ phone_number });
+    const isNewUser = !user;
 
     // Generate OTP
     const otp = "123456"; // Replace with actual OTP generation logic
-    sendOTP(phone_number, otp);
 
-    // Store OTP in database (even if user is new)
-    await userModel.updateOne(
-      { phone_number },
-      { $set: { otp, otp_expiry: new Date(Date.now() + 5 * 60 * 1000) } },
-      { upsert: true } // Creates a new document if user doesn't exist
-    );
+    // Send OTP (handle potential errors)
+    try {
+      sendOTP(phone_number, otp);
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      return res.status(500).json({ status: false, message: "Failed to send OTP" });
+    }
+
+    if (!user) {
+      // Create a minimal user record for new users
+      user = new userModel({ phone_number, otp, otp_expiry: new Date(Date.now() + 5 * 60 * 1000) });
+      await user.save();
+    } else {
+      // Update OTP for existing users
+      await userModel.updateOne(
+        { phone_number },
+        { $set: { otp, otp_expiry: new Date(Date.now() + 5 * 60 * 1000) } }
+      );
+    }
 
     return res.status(200).json({
       status: true,
       message: "OTP sent successfully.",
-      is_new_user: isNewUser, // Inform frontend if user is new
+      is_new_user: isNewUser,
     });
   } catch (error) {
+    console.error("Server error:", error);
     return res
       .status(500)
-      .json({ status: false, message: "Internal server error", error });
+      .json({ status: false, message: "Internal server error", error: error.message });
   }
 };
 
@@ -419,13 +432,19 @@ export const verifyOTPAndLogin = async (req, res) => {
 
     // Check if OTP expired
     if (user.otp_expiry && new Date() > user.otp_expiry) {
-      return res.status(400).json({ status: false, message: "OTP expired. Please request a new one." });
+      return res
+        .status(400)
+        .json({
+          status: false,
+          message: "OTP expired. Please request a new one.",
+        });
     }
 
     let isNewUser = false;
 
     // If user is new, create an account now
-    if (!user.name) { // Assuming 'name' is required for existing users
+    if (!user.name) {
+      // Assuming 'name' is required for existing users
       isNewUser = true;
       user = new userModel({
         phone_number,
@@ -457,7 +476,7 @@ export const verifyOTPAndLogin = async (req, res) => {
         email: user.email || "",
         phone_number: user.phone_number,
         role: user.role || "customer",
-      }
+      },
     });
   } catch (error) {
     return res
