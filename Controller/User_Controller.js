@@ -292,7 +292,8 @@ export const mobileLogin = async (req, res) => {
     }
 
     // Generate OTP and send it to the user's phone number (mocked)
-    const otp = generateOTP();
+    // const otp = generateOTP();
+    const otp ="123456";
     sendOTP(phone_number, otp);
 
     // Update OTP without triggering validation

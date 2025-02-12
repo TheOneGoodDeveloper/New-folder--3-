@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     customer_type: {
       type: String,
       enum: ["online", "offline"],
-      default:"online",
+      default: "online",
       required: true,
     },
     phone_number: { type: String },
