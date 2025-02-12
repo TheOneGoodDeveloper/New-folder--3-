@@ -274,26 +274,65 @@ const sendOTP = (phone_number, otp) => {
 };
 
 // Mobile login with OTP functionality
+// export const mobileLogin = async (req, res) => {
+//   try {
+//     const { phone_number } = req.body;
+//     console.log(req.body);
+//     if (!phone_number) {
+//       return res
+//         .status(400)
+//         .json({ status: false, message: "Phone number is required" });
+//     }
+
+//     // Find user by phone number
+//     const user = await userModel.findOne({ phone_number });
+
+//     if (!user) {
+//       return res.status(404).json({ status: false, message: "User not found" });
+//     }
+
+//     // Generate OTP and send it to the user's phone number (mocked)
+//     // const otp = generateOTP();
+//     const otp ="123456";
+//     sendOTP(phone_number, otp);
+
+//     // Update OTP without triggering validation
+//     await userModel.updateOne({ _id: user._id }, { $set: { otp } });
+
+//     return res.status(200).json({
+//       status: true,
+//       message: "OTP sent successfully. Please check your phone.",
+//     });
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json({ status: false, message: "Internal server error", error });
+//   }
+// };
+
 export const mobileLogin = async (req, res) => {
   try {
     const { phone_number } = req.body;
-    console.log(req.body);
+
     if (!phone_number) {
       return res
         .status(400)
         .json({ status: false, message: "Phone number is required" });
     }
 
-    // Find user by phone number
-    const user = await userModel.findOne({ phone_number });
+    // Check if user exists
+    let user = await userModel.findOne({ phone_number });
+    let isNewUser = false;
 
     if (!user) {
-      return res.status(404).json({ status: false, message: "User not found" });
+      // Create new user
+      user = new userModel({ phone_number });
+      await user.save();
+      isNewUser = true;
     }
 
     // Generate OTP and send it to the user's phone number (mocked)
-    // const otp = generateOTP();
-    const otp ="123456";
+    const otp = "123456"; // Replace with actual OTP generation logic
     sendOTP(phone_number, otp);
 
     // Update OTP without triggering validation
@@ -302,6 +341,7 @@ export const mobileLogin = async (req, res) => {
     return res.status(200).json({
       status: true,
       message: "OTP sent successfully. Please check your phone.",
+      is_new_user: isNewUser, // Inform frontend if the user is new
     });
   } catch (error) {
     return res
@@ -309,7 +349,6 @@ export const mobileLogin = async (req, res) => {
       .json({ status: false, message: "Internal server error", error });
   }
 };
-
 
 // Verify OTP and login the user
 export const verifyOTPAndLogin = async (req, res) => {
