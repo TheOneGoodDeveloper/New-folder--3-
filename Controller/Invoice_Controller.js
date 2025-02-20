@@ -142,37 +142,37 @@ export const deleteInvoice = async (req, res) => {
   }
 };
 
-// export const getInvoiceByUser = async (req, res) => {
-//   const { user_id } = req.body;
+export const getInvoiceByUser = async (req, res) => {
+  const { user_id } = req.body;
 
-//   if (!user_id) {
-//     return res
-//       .status(400)
-//       .json({ success: false, message: "User ID is required" });
-//   }
+  if (!user_id) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User ID is required" });
+  }
 
-//   try {
-//     const invoices = await invoiceModel
-//       .find({ user: user_id })
-//       .populate("user")
-//       .populate("products.product_id");
+  try {
+    const invoices = await invoiceModel
+      .find({ user: user_id })
+      .populate("user")
+      .populate("products.product_id");
 
-//     if (invoices.length === 0) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "No invoices found for this user" });
-//     }
+    if (invoices.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No invoices found for this user" });
+    }
 
-//     res.status(200).json({ success: true, invoices });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({
-//         success: false,
-//         message: "Internal server error",
-//         error: error.message,
-//       });
-//   }
-// };
+    res.status(200).json({ success: true, invoices });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        // success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
+  }
+};
 
 
