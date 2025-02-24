@@ -56,10 +56,10 @@ UserRoute.get("/checkWishlist",User.authMiddleware,Wish.checkForWishlist)
 UserRoute.post("/createOrder",User.authMiddleware,Order.createOrder);
 UserRoute.get("/order/:id", User.authMiddleware, Order.getOrderById);
 UserRoute.get("/orders", User.authMiddleware, Order.getAllOrders);
-UserRoute.put("/order/:id/status", User.authMiddleware, Order.updateOrderStatus);
+// UserRoute.put("/order/:id/status", User.authMiddleware, Order.updateOrderStatus);
 UserRoute.delete("/order/:id", User.authMiddleware, Order.deleteOrder);
 UserRoute.post("/getOrdersByUser", User.authMiddleware, Order.getOrdersByUser);
-UserRoute.post("/verifyPayment", User.authMiddleware, Order.verifyRazorpayPayment);
+// UserRoute.post("/verifyPayment", User.authMiddleware, Order.verifyRazorpayPayment);
 
 // reviews
 UserRoute.post("/createReview", User.authMiddleware,Review.createReview);
