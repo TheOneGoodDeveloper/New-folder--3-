@@ -120,6 +120,7 @@ export const updateInvoice = async (req, res) => {
   }
 };
 
+
 export const deleteInvoice = async (req, res) => {
   try {
     const { id } = req.params;
@@ -167,7 +168,7 @@ export const getInvoiceByUser = async (req, res) => {
     res
       .status(500)
       .json({
-        success: false,
+        // success: false,
         message: "Internal server error",
         error: error.message,
       });

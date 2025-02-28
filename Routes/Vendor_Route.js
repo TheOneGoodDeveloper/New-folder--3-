@@ -3,6 +3,8 @@ import * as Vendor from "../Controller/Vendor_Controller.js";
 import * as Product from "../Controller/Product_Controller.js";
 import * as Category from "../Controller/Category_Controller.js";
 import * as subCategory from "../Controller/SubCategory_Controller.js";
+import * as orders from "../Controller/Order_Controller.js";
+// import orders from "razorpay/dist/types/orders.js";
 
 const VendorRoute = express.Router();
 
@@ -38,6 +40,7 @@ VendorRoute.get(
   Vendor.authMiddleware,
   Vendor.vendor_dashboard
 );
+// VendorRoute.get("/Vendor_orders", Vendor.authMiddleware, orders.vendorOrders); 
 // VendorRoute.get("/productSaleByVendor",Vendor.authMiddleware,Vendor.productSaleByVendor)
 
 export default VendorRoute;

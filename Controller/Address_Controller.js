@@ -10,7 +10,7 @@ export const addAddress = async (req, res) => {
         area,
         city,
         state,
-        pin,
+        postalCode: pin,
         country,
         phone,
         isDefault,
@@ -64,7 +64,7 @@ export const updateAddress = async (req, res) => {
         area,
         city,
         state,
-        postalCode,
+        pin,
         country,
         isDefault,
       } = req.body;
@@ -80,7 +80,7 @@ export const updateAddress = async (req, res) => {
         existingAddress.area = area || existingAddress.area;
         existingAddress.city = city || existingAddress.city;
         existingAddress.state = state || existingAddress.state;
-        existingAddress.postalCode = postalCode || existingAddress.postalCode;
+        existingAddress.postalCode = pin || existingAddress.postalCode;
         existingAddress.country = country || existingAddress.country;
         existingAddress.isDefault =
           isDefault !== undefined ? isDefault : existingAddress.isDefault;
