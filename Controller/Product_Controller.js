@@ -309,6 +309,10 @@ export const createProduct = async (req, res) => {
         .status(400)
         .json({ status: false, error: "Missing required fields" });
     }
+    const gstPercent = parseFloat(gst_percentage);
+    if (isNaN(gstPercent) || gstPercent < 0 || gstPercent > 100) {
+      return res.status(400).json({ error: "GST percentage must be between 1 and 100" });
+    }
 
     // Check if the product already exists based on name, gender, size, and color in variants
     for (let variant of variants) {

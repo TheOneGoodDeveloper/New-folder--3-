@@ -40,7 +40,7 @@ VendorRoute.get(
   Vendor.authMiddleware,
   Vendor.vendor_dashboard
 );
-// VendorRoute.get("/Vendor_orders", Vendor.authMiddleware, orders.vendorOrders); 
+VendorRoute.get("/Vendor_orders", Vendor.authMiddleware, orders.getVendorOrders); 
 // VendorRoute.get("/productSaleByVendor",Vendor.authMiddleware,Vendor.productSaleByVendor)
 
 export default VendorRoute;

@@ -84,49 +84,106 @@
 
 import mongoose from "mongoose";
 
+// const orderSchema = new mongoose.Schema(
+//   {
+//     userId: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "User",
+//       required: true,
+//     },
+//     shippingAddress: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "Address",
+//       required: true,
+//     },
+//     paymentMethod: { type: String, enum: ["Razorpay", "COD"], required: true },
+//     paymentStatus: {
+//       type: String,
+//       enum: ["Pending", "Completed"],
+//       default: "Pending",
+//     },
+//     razorpayOrderId: { type: String },
+//     totalAmount: { type: Number, required: true },
+//     orderStatus: {
+//       type: String,
+//       enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+//       default: "Pending",
+//     },
+
+//     // Store vendor-wise product breakdown
+//     vendorOrders: [
+//       {
+//         vendor_id: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
+//         products: [
+//           {
+//             productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+//             name: String,
+//             quantity: Number,
+//             price: Number,
+//             total: Number,
+//           },
+//         ],
+//         subTotal: Number, // Vendor-wise total amount
+//         orderStatus: { type: String, default: "Pending" },
+//       },
+//     ],
+//   },
+//   { timestamps: true }
+// );
 const orderSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "users",
       required: true,
     },
+    vendor_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Vendors",
+      required: true,
+    },
+    parentOrderId: { type: mongoose.Schema.Types.ObjectId, default: null }, // Links related vendor orders
+    products: [
+      {
+        productId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        price: { type: Number, required: true },
+        total: { type: Number, required: true },
+        orderStatus: {
+          type: String,
+          enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+          default: "Pending",
+        }, // Status per product
+      },
+    ],
     shippingAddress: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Address",
       required: true,
     },
-    paymentMethod: { type: String, enum: ["Razorpay", "COD"], required: true },
+    paymentMethod: {
+      type: String,
+      enum: [
+        "Credit Card",
+        "Debit Card",
+        "PayPal",
+        "Cash on Delivery",
+        "Razorpay",
+      ],
+      required: true,
+    },
     paymentStatus: {
       type: String,
-      enum: ["Pending", "Completed"],
+      enum: ["Pending", "Completed", "Failed"],
       default: "Pending",
     },
-    razorpayOrderId: { type: String },
     totalAmount: { type: Number, required: true },
-    orderStatus: {
-      type: String,
-      enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
-      default: "Pending",
-    },
-
-    // Store vendor-wise product breakdown
-    vendorOrders: [
-      {
-        vendor_id: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
-        products: [
-          {
-            productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-            name: String,
-            quantity: Number,
-            price: Number,
-            total: Number,
-          },
-        ],
-        subTotal: Number, // Vendor-wise total amount
-        orderStatus: { type: String, default: "Pending" },
-      },
-    ],
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

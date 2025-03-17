@@ -190,26 +190,121 @@ const razorpayInstance = new Razorpay({
 //     return res.status(500).json({ message: "Failed to create order", error });
 //   }
 // };
+//3 march 
+// export const createOrder = async (req, res) => {
+//   try {
+//     const { cartId, address_id, paymentMethod = "Razorpay" } = req.body;
 
+//     if (!cartId || !address_id) {
+//       return res
+//         .status(400)
+//         .json({ message: "Cart ID and Address ID are required" });
+//     }
+
+//     // Retrieve the cart
+//     const cart = await cartModel
+//       .findById(cartId)
+//       .populate("items.product", "name price vendor_id total_stock");
+
+//     if (!cart || cart.items.length === 0) {
+//       return res
+//         .status(400)
+//         .json({ message: "Cart is empty or does not exist" });
+//     }
+
+//     // Retrieve the shipping address
+//     const shippingAddress = await addressModel.findById(address_id);
+//     if (!shippingAddress) {
+//       return res.status(404).json({ message: "Shipping address not found" });
+//     }
+
+//     // Map cart items to order products and calculate total amount
+//     const orderProducts = cart.items.map((item) => ({
+//       productId: item.product._id,
+//       name: item.product.name,
+//       vendor_id: item.product.vendor_id, // Fetch vendor ID correctly
+//       quantity: item.quantity,
+//       price: item.price,
+//       total: item.quantity * item.price,
+//     }));
+
+//     // Calculate total order amount
+//     const totalAmount = orderProducts.reduce(
+//       (sum, item) => sum + item.total,
+//       0
+//     );
+
+//     // Group products by vendor
+//     const vendorOrders = {};
+//     orderProducts.forEach((product) => {
+//       if (!vendorOrders[product.vendor_id]) {
+//         vendorOrders[product.vendor_id] = [];
+//       }
+//       vendorOrders[product.vendor_id].push(product);
+//     });
+
+//     // Initialize Razorpay order ID
+//     let razorpayOrderId = null;
+//     if (
+//       paymentMethod === "Razorpay" &&
+//       typeof razorpayInstance !== "undefined"
+//     ) {
+//       const razorpayOrder = await razorpayInstance.orders.create({
+//         amount: totalAmount * 100, // Razorpay expects amount in paise
+//         currency: "INR",
+//         receipt: `order_${Date.now()}`,
+//         payment_capture: 1,
+//       });
+//       razorpayOrderId = razorpayOrder.id;
+//     }
+
+//     // Create separate orders for each vendor
+//     const orders = await Promise.all(
+//       Object.keys(vendorOrders).map(async (vendorId) => {
+//         return orderModel.create({
+//           userId: cart.user,
+//           vendor_id: vendorId,
+//           products: vendorOrders[vendorId],
+//           shippingAddress: address_id,
+//           paymentMethod,
+//           paymentStatus: paymentMethod === "Razorpay" ? "Pending" : "Completed",
+//           razorpayOrderId,
+//           totalAmount: vendorOrders[vendorId].reduce(
+//             (sum, item) => sum + item.total,
+//             0
+//           ),
+//           orderStatus: "Pending",
+//         });
+//       })
+//     );
+
+//     // Clear cart after order placement
+//     await cartModel.findByIdAndDelete(cartId);
+
+//     return res.status(201).json({
+//       message: "Order placed successfully",
+//       orders,
+//       razorpayOrderId,
+//     });
+//   } catch (error) {
+//     console.error("Error creating order:", error);
+//     return res
+//       .status(500)
+//       .json({ message: "Internal Server Error", error: error.message });
+//   }
+// };
 export const createOrder = async (req, res) => {
   try {
     const { cartId, address_id, paymentMethod = "Razorpay" } = req.body;
 
     if (!cartId || !address_id) {
-      return res
-        .status(400)
-        .json({ message: "Cart ID and Address ID are required" });
+      return res.status(400).json({ message: "Cart ID and Address ID are required" });
     }
 
     // Retrieve the cart
-    const cart = await cartModel
-      .findById(cartId)
-      .populate("items.product", "name price vendor_id total_stock");
-
+    const cart = await cartModel.findById(cartId).populate("items.product", "name price vendor_id total_stock");
     if (!cart || cart.items.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Cart is empty or does not exist" });
+      return res.status(400).json({ message: "Cart is empty or does not exist" });
     }
 
     // Retrieve the shipping address
@@ -218,21 +313,19 @@ export const createOrder = async (req, res) => {
       return res.status(404).json({ message: "Shipping address not found" });
     }
 
-    // Map cart items to order products and calculate total amount
+    // Map cart items to order products
     const orderProducts = cart.items.map((item) => ({
       productId: item.product._id,
       name: item.product.name,
-      vendor_id: item.product.vendor_id, // Fetch vendor ID correctly
+      vendor_id: item.product.vendor_id, // Ensure vendor ID is fetched correctly
       quantity: item.quantity,
       price: item.price,
       total: item.quantity * item.price,
+      orderStatus: "Pending", // Initialize product-level status
     }));
 
     // Calculate total order amount
-    const totalAmount = orderProducts.reduce(
-      (sum, item) => sum + item.total,
-      0
-    );
+    const totalAmount = orderProducts.reduce((sum, item) => sum + item.total, 0);
 
     // Group products by vendor
     const vendorOrders = {};
@@ -245,10 +338,7 @@ export const createOrder = async (req, res) => {
 
     // Initialize Razorpay order ID
     let razorpayOrderId = null;
-    if (
-      paymentMethod === "Razorpay" &&
-      typeof razorpayInstance !== "undefined"
-    ) {
+    if (paymentMethod === "Razorpay" && typeof razorpayInstance !== "undefined") {
       const razorpayOrder = await razorpayInstance.orders.create({
         amount: totalAmount * 100, // Razorpay expects amount in paise
         currency: "INR",
@@ -258,22 +348,22 @@ export const createOrder = async (req, res) => {
       razorpayOrderId = razorpayOrder.id;
     }
 
+    // Parent Order ID (optional, used for tracking all vendor-wise orders)
+    const parentOrderId = new mongoose.Types.ObjectId();
+
     // Create separate orders for each vendor
     const orders = await Promise.all(
       Object.keys(vendorOrders).map(async (vendorId) => {
         return orderModel.create({
           userId: cart.user,
           vendor_id: vendorId,
+          parentOrderId, // Link vendor orders to parent order ID
           products: vendorOrders[vendorId],
           shippingAddress: address_id,
           paymentMethod,
           paymentStatus: paymentMethod === "Razorpay" ? "Pending" : "Completed",
           razorpayOrderId,
-          totalAmount: vendorOrders[vendorId].reduce(
-            (sum, item) => sum + item.total,
-            0
-          ),
-          orderStatus: "Pending",
+          totalAmount: vendorOrders[vendorId].reduce((sum, item) => sum + item.total, 0),
         });
       })
     );
@@ -288,11 +378,10 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating order:", error);
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 
 export const getOrderById = async (req, res) => {
   try {
@@ -765,27 +854,62 @@ export const verifyRazorpayPayment = async (req, res) => {
       .json({ message: "Payment verification failed", error });
   }
 };
-
 export const getAllOrders = async (req, res) => {
   try {
-    // Retrieve all orders from the database
+    // Fetch all orders sorted by latest
     const orders = await orderModel
       .find()
-      .populate("userId")
-      .populate("products.productId"); // Assuming Order has references to 'userId' and 'products.productId'
+      .populate("userId", "name email") // Populate user details
+      .populate("products.productId", "name price") // Populate product details
+      .populate("vendor_id", "name") // Populate vendor details
+      .populate("shippingAddress") // Populate shipping address
+      .sort({ createdAt: -1 }); // Latest orders first
 
     if (!orders || orders.length === 0) {
       return res.status(404).json({ message: "No orders found" });
     }
 
-    // Respond with the list of orders
+    // Send orders to admin
     res.status(200).json({ orders });
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching orders:", error);
     res.status(500).json({ message: "Failed to fetch orders", error });
   }
 };
 
-export const VendorOrders = async (req, res) => {
 
-}
+export const getCustomerOrders = async (req, res) => {
+  try {
+    const userId = req.user._id; // Assuming customer is authenticated
+
+    // Fetch all vendor orders for this user
+    const orders = await Order.find({ userId }).populate("products.productId");
+
+    // Group by parentOrderId
+    const groupedOrders = {};
+    orders.forEach((order) => {
+      const key = order.parentOrderId || order._id.toString(); // Use parentOrderId if available
+      if (!groupedOrders[key]) {
+        groupedOrders[key] = [];
+      }
+      groupedOrders[key].push(order);
+    });
+
+    res.status(200).json({ orders: groupedOrders });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getVendorOrders = async (req, res) => {
+  try {
+    const vendorId = req.user.vendor_id;
+
+    const orders = await Order.find({ vendor_id: vendorId }).populate("products.productId");
+
+    res.status(200).json({ orders });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+

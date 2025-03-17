@@ -55,7 +55,7 @@ UserRoute.get("/checkWishlist",User.authMiddleware,Wish.checkForWishlist)
 // orders
 UserRoute.post("/createOrder",User.authMiddleware,Order.createOrder);
 UserRoute.get("/order/:id", User.authMiddleware, Order.getOrderById);
-UserRoute.get("/orders", User.authMiddleware, Order.getAllOrders);
+UserRoute.get("/orders", User.authMiddleware, Order.getCustomerOrders);
 // UserRoute.put("/order/:id/status", User.authMiddleware, Order.updateOrderStatus);
 UserRoute.delete("/order/:id", User.authMiddleware, Order.deleteOrder);
 UserRoute.post("/getOrdersByUser", User.authMiddleware, Order.getOrdersByUser);
