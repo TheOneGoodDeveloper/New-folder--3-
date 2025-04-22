@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; font-size: 24px; font-weight: bold; padding-bottom: 10px; border-bottom: 2px solid #ddd; }
+        .logo { width: 150px; margin-bottom: 10px; }
+        .tagline { font-size: 14px; color: #666; }
+        .order-details, .shipping-billing { margin-top: 20px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f8f8f8; }
+        .total { text-align: right; font-weight: bold; font-size: 16px; }
+        .footer { text-align: center; margin-top: 40px; font-size: 12px; color: gray; }
+        .qr-container { text-align: center; margin-top: 20px; }
+        .qr-code { width: 100px; height: 100px; }
+        .highlight { font-weight: bold; color: #ff6600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon Logo">
+            <div class="tagline">Your Trusted Online Marketplace</div>
+            <h2>Invoice</h2>
+        </div>
+        
+        <div class="order-details">
+            <p><strong>Order ID:</strong> <%= order._id %></p>
+            <p><strong>Order Date:</strong> <%= new Date(order.createdAt).toLocaleDateString() %></p>
+        </div>
+
+        <div class="shipping-billing">
+            <p><strong>Customer:</strong> <%= order.userId.name %></p>
+            <p><strong>Email:</strong> <%= order.userId.email %></p>
+            <p><strong>Shipping Address:</strong> <%= order.shippingAddress %></p>
+            <p><strong>Payment Method:</strong> <%= order.paymentMethod %></p>
+            <p><strong>Payment Status:</strong> <span class="highlight"><%= order.paymentStatus %></span></p>
+        </div>
+
+        <h3>Items Purchased</h3>
+        <table>
+            <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+            <% order.products.forEach(item => { %>
+            <tr>
+                <td><%= item.productId.name %></td>
+                <td><%= item.quantity %></td>
+                <td>₹<%= item.price %></td>
+                <td>₹<%= item.total %></td>
+            </tr>
+            <% }) %>
+        </table>
+
+        <table>
+            <tr>
+                <td class="total">Subtotal:</td>
+                <td class="total">₹<%= order.totalAmount - (order.tax || 0) %></td>
+            </tr>
+            <tr>
+                <td class="total">Tax:</td>
+                <td class="total">₹<%= order.tax || 0 %></td>
+            </tr>
+            <tr>
+                <td class="total">Grand Total:</td>
+                <td class="total">₹<%= order.totalAmount %></td>
+            </tr>
+        </table>
+
+        <div class="qr-container">
+            <p>Track your order:</p>
+            <img class="qr-code" src="<%= order.qrCodeURL %>" alt="QR Code">
+        </div>
+
+        <div class="footer">
+            Thank you for shopping with us! Need help? Contact <a href="mailto:support@amazon.com">support@amazon.com</a>
+        </div>
+    </div>
+</body>
+</html>

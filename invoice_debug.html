@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f9f9f9;
+      }
+      .container {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #ddd;
+      }
+      .logo {
+        width: 150px;
+        margin-bottom: 10px;
+      }
+      .tagline {
+        font-size: 14px;
+        color: #666;
+      }
+      .order-details,
+      .shipping-billing {
+        margin-top: 20px;
+        font-size: 14px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+      }
+      th {
+        background-color: #f8f8f8;
+      }
+      .total {
+        text-align: right;
+        font-weight: bold;
+        font-size: 16px;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 40px;
+        font-size: 12px;
+        color: gray;
+      }
+      .qr-container {
+        text-align: center;
+        margin-top: 20px;
+      }
+      .qr-code {
+        width: 100px;
+        height: 100px;
+      }
+      .highlight {
+        font-weight: bold;
+        color: #ff6600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img
+          class="logo"
+          src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg"
+          alt="Amazon Logo"
+        />
+        <div class="tagline">Your Trusted Online Marketplace</div>
+        <h2>Invoice</h2>
+      </div>
+
+      <div class="order-details">
+        <p><strong>Order ID:</strong> 67cff8e40fbdc328ebfb01dc</p>
+        <p><strong>Order Date:</strong> 3/11/2025</p>
+      </div>
+
+      <div class="shipping-billing">
+        <p><strong>Customer:</strong> Kumar</p>
+        <p><strong>Email:</strong> sampleuser@mail.com</p>
+        <p><strong>Shipping Address:</strong> 674af382f4c1ad7f2e15c65f</p>
+        <p><strong>Payment Method:</strong> Razorpay</p>
+        <p>
+          <strong>Payment Status:</strong>
+          <span class="highlight">Pending</span>
+        </p>
+      </div>
+
+      <h3>Items Purchased</h3>
+      <table>
+        <tr>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+
+        <tr>
+          <td>allen t-shirts</td>
+          <td>1</td>
+          <td>₹260.00</td>
+          <td>₹260.00</td>
+        </tr>
+        <tr>
+          <td>Full Sleeve T-shirt</td>
+          <td>1</td>
+          <td>₹605.00</td>
+          <td>₹605.00</td>
+        </tr>
+      </table>
+
+      <div class="qr-container">
+        <p>Scan to View Invoice:</p>
+        <img
+          class="qr-code"
+          src="data:image/png;base64,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"
+          alt="QR Code"
+        />
+      </div>
+
+      <div class="footer">Thank you for shopping with us!</div>
+    </div>
+  </body>
+</html>

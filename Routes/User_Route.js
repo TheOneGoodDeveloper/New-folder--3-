@@ -7,6 +7,7 @@ import * as Address from "../Controller/Address_Controller.js";
 import * as Order from "../Controller/Order_Controller.js";
 import * as Wish from "../Controller/Wishlist_Controller.js"
 import * as Review from "../Controller/Review_Controller.js";
+import * as Invoice from "../Controller/Invoice_Controller.js"
 
 const UserRoute = express.Router();
 // user
@@ -59,7 +60,7 @@ UserRoute.get("/orders", User.authMiddleware, Order.getCustomerOrders);
 // UserRoute.put("/order/:id/status", User.authMiddleware, Order.updateOrderStatus);
 UserRoute.delete("/order/:id", User.authMiddleware, Order.deleteOrder);
 UserRoute.post("/getOrdersByUser", User.authMiddleware, Order.getOrdersByUser);
-// UserRoute.post("/verifyPayment", User.authMiddleware, Order.verifyRazorpayPayment);
+UserRoute.post("/verifyPayment", User.authMiddleware, Order.verifyPayment);
 
 // reviews
 UserRoute.post("/createReview", User.authMiddleware,Review.createReview);
@@ -67,4 +68,8 @@ UserRoute.get("/getAllReviews", Review.getAllReviews);
 UserRoute.get("/getReviewById", Review.getReviewById);
 UserRoute.put("/updateReviewById",User.authMiddleware, Review.updateReviewById);
 UserRoute.delete("/deleteReviewById",User.authMiddleware, Review.deleteReviewById);
+
+// Invoice 
+UserRoute.post("/invoiceOrder",User.authMiddleware,Invoice.createInvoice)
+
 export default UserRoute;

@@ -162,7 +162,7 @@ export const getVendorProfile = async (req, res) => {
   if (req.user.role === "vendor") {
     try {
       // Assuming the vendor's ID is stored in `req.user.id` after authentication
-      const vendorId = req.user.id;
+      const vendorId = req.body.vendorId || req.user.id;
 
       // Find the vendor by ID, excluding the password field
       const vendor = await vendorModel

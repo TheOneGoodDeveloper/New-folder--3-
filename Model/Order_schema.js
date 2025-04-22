@@ -143,6 +143,9 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
     parentOrderId: { type: mongoose.Schema.Types.ObjectId, default: null }, // Links related vendor orders
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    invoice_generated: { type: Boolean, default: false },
     products: [
       {
         productId: {
@@ -158,6 +161,11 @@ const orderSchema = new mongoose.Schema(
           type: String,
           enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
           default: "Pending",
+        },
+        purchaseType: {
+          type: String,
+          enum: ["online", "offline"],
+          required: true,
         }, // Status per product
       },
     ],
@@ -172,8 +180,9 @@ const orderSchema = new mongoose.Schema(
         "Credit Card",
         "Debit Card",
         "PayPal",
-        "Cash on Delivery",
+        "Cash",
         "Razorpay",
+        "Upi"
       ],
       required: true,
     },
@@ -185,6 +194,7 @@ const orderSchema = new mongoose.Schema(
     totalAmount: { type: Number, required: true },
     isDeleted: { type: Boolean, default: false },
   },
+
   { timestamps: true }
 );
 export const orderModel = mongoose.model("Orders", orderSchema);

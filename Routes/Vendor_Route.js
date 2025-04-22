@@ -28,8 +28,16 @@ VendorRoute.post(
   Product.deleteProduct
 );
 VendorRoute.get("/productList", Vendor.authMiddleware, Vendor.getAllProducts);
-VendorRoute.post("/getAllCategory",Vendor.authMiddleware, Category.getAllCategories);
-VendorRoute.post("/subCategorybyCategory",Vendor.authMiddleware, subCategory.getSubCategoryByCategory);
+VendorRoute.post(
+  "/getAllCategory",
+  Vendor.authMiddleware,
+  Category.getAllCategories
+);
+VendorRoute.post(
+  "/subCategorybyCategory",
+  Vendor.authMiddleware,
+  subCategory.getSubCategoryByCategory
+);
 VendorRoute.get(
   "/getProductById",
   Vendor.authMiddleware,
@@ -40,7 +48,21 @@ VendorRoute.get(
   Vendor.authMiddleware,
   Vendor.vendor_dashboard
 );
-VendorRoute.get("/Vendor_orders", Vendor.authMiddleware, orders.getVendorOrders); 
-// VendorRoute.get("/productSaleByVendor",Vendor.authMiddleware,Vendor.productSaleByVendor)
+VendorRoute.get(
+  "/Vendor_orders",
+  Vendor.authMiddleware,
+  orders.getVendorOrders
+);
+VendorRoute.put(
+  "/vendorOrderStatus/:orderId",
+  Vendor.authMiddleware,
+  orders.updateOrderStatus
+);
 
+// VendorRoute.get("/productSaleByVendor",Vendor.authMiddleware,Vendor.productSaleByVendor)
+VendorRoute.post(
+  "/offlineBilling",
+  Vendor.authMiddleware,
+  orders.createOfflineOrder
+);
 export default VendorRoute;

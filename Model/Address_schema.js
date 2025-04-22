@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 
 const addressSchema = new mongoose.Schema({
   userId: {
@@ -6,16 +7,21 @@ const addressSchema = new mongoose.Schema({
     ref: "User", // Reference to the User schema
     required: true,
   },
+  customerType: {
+    type: String,
+    enum: ["online", "offline"],
+    default: "online",
+  },
   street: {
     type: String,
     required: true,
   },
-  area:{
+  area: {
     type: String,
     requried: true,
   },
-  landmark:{
-    type:String,
+  landmark: {
+    type: String,
   },
   city: {
     type: String,
@@ -29,9 +35,9 @@ const addressSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  phone:{
-    type:String,
-    required: true
+  phone: {
+    type: String,
+    required: true,
   },
   country: {
     type: String,
